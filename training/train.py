@@ -48,4 +48,4 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
             valid_se += np.sum((vy_pred-vy_true)**2)
         valid_rmse = np.sqrt(valid_se / n_vs)
         
-        print("Epoch %d: train LOSS %.4f valid LOSS %.4f train RMSE %.4f valid RMSE %.4f" % (epoch, loss_avg, vloss_avg, train_rmse, valid_rmse))
+        print("train LOSS %.4f valid LOSS %.4f train RMSE %.4f valid RMSE %.4f" % (epoch, loss_avg, vloss_avg, train_rmse, valid_rmse))

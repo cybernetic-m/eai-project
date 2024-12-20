@@ -37,8 +37,8 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
             vloss_avg, vy_true_list, vy_pred_list = train_one_epoch(model, optimizer, loss_fn, validation_dataloader, train=False)
         
         # Calculate the Root Mean Square Error metrics
-        train_se = 0 # Initialize the Mean Square Error
-        
+        valid_se = 0 # Initialize the Mean Square Error
+
         valid_list_len = len(vy_pred_list)
         n_vs = valid_list_len * len(vy_pred_list[0])
 

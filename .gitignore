@@ -158,6 +158,7 @@ cython_debug/
 .DS_Store
 csv
 csv.zip
+results
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

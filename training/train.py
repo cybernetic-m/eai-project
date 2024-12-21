@@ -14,6 +14,7 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
 
     best_vloss = 1000000000
 
+
     for epoch in range(num_epochs):
         print(f'EPOCH {epoch + 1}/{num_epochs}:')
 
@@ -47,5 +48,9 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
             vy_true = np.array(vy_true_list[i])
             valid_se += np.sum((vy_pred-vy_true)**2)
         valid_rmse = np.sqrt(valid_se / n_vs)
+
+        if vloss_avg < best_vloss:
+            best_vloss = vloss_avg
+            model.save(epoch)
         
-        print("train LOSS %.4f valid LOSS %.4f train RMSE %.4f valid RMSE %.4f" % (epoch, loss_avg, vloss_avg, train_rmse, valid_rmse))
+        print("train LOSS %.4f valid LOSS %.4f train RMSE %.4f valid RMSE %.4f" % (loss_avg, vloss_avg, train_rmse, valid_rmse))

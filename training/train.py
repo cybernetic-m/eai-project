@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 # Get the absolute paths of the directories containing the utils functions and train_one_epoch
 training_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../training'))
 # Add these directories to sys.path
@@ -10,7 +11,7 @@ from train_one_epoch import train_one_epoch
 import numpy as np
 import torch
 
-def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation_dataloader): 
+def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation_dataloader, hyperparams): 
 
     best_vloss = 1000000000
 
@@ -51,6 +52,9 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
 
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg
-            model.save(epoch)
+            path = model.save(epoch)
+            with open(path+'/hyperparam.json', 'w') as f:
+                json.dump(hyperparams, f)
+            
         
         print("train LOSS %.4f valid LOSS %.4f train RMSE %.4f valid RMSE %.4f" % (loss_avg, vloss_avg, train_rmse, valid_rmse))

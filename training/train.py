@@ -18,16 +18,20 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
 
     best_vloss = 1000000000
 
+    # Definition of the dictionary of metrics
+    metrics = {
+        'rmse':[], 
+        'mae':[],
+        'r2':[]       
+               }
 
     for epoch in range(num_epochs):
         print(f'EPOCH {epoch + 1}/{num_epochs}:')
 
         # Compute the loss_avg, y_pred and y_true
         loss_avg, y_true_list, y_pred_list = train_one_epoch(model, optimizer, loss_fn, training_dataloader, train=True)
-        
-        print(y_true_list)
-
-        train_metrics = calculate_metrics(y_true_list, y_pred_list)
+                
+        train_metrics = calculate_metrics(y_true_list, y_pred_list, metrics)
 
         # Validation 
         with torch.no_grad():
@@ -44,33 +48,3 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
     
     with open(path+'/train_metrics.json', 'w') as f:
         json.dump(train_metrics, f)
-
-
-        '''
-        # Calculate the Root Mean Square Error metrics
-        train_se = 0 # Initialize the Mean Square Error
- 
-        train_list_len = len(y_pred_list)
-        n_ts = train_list_len * len(y_pred_list[0])
-
-        for i in range(train_list_len):
-            y_pred = np.array(y_pred_list[i])
-            y_true = np.array(y_true_list[i])
-            train_se += np.sum((y_pred-y_true)**2)
-        train_rmse = np.sqrt(train_se / n_ts)
-
-        '''
-
-        '''
-        # Calculate the Root Mean Square Error metrics
-        valid_se = 0 # Initialize the Mean Square Error
-
-        valid_list_len = len(vy_pred_list)
-        n_vs = valid_list_len * len(vy_pred_list[0])
-
-        for i in range(valid_list_len):
-            vy_pred = np.array(vy_pred_list[i])
-            vy_true = np.array(vy_true_list[i])
-            valid_se += np.sum((vy_pred-vy_true)**2)
-        valid_rmse = np.sqrt(valid_se / n_vs)
-        '''

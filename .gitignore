@@ -159,6 +159,8 @@ cython_debug/
 csv
 csv.zip
 results
+X.npy
+Y.npy
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

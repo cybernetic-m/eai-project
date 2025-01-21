@@ -19,7 +19,12 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
     best_vloss = 1000000000
 
     # Definition of the dictionary of metrics
-    metrics = {
+    train_metrics = {
+        'rmse':[], 
+        'mae':[],
+        'r2':[]       
+               }
+    valid_metrics = {
         'rmse':[], 
         'mae':[],
         'r2':[]       
@@ -31,13 +36,13 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
         # Compute the loss_avg, y_pred and y_true
         loss_avg, y_true_list, y_pred_list = train_one_epoch(model, optimizer, loss_fn, training_dataloader, train=True)
                 
-        train_metrics = calculate_metrics(y_true_list, y_pred_list, metrics)
+        train_metrics = calculate_metrics(y_true_list, y_pred_list, train_metrics)
 
         # Validation 
         with torch.no_grad():
             vloss_avg, vy_true_list, vy_pred_list = train_one_epoch(model, optimizer, loss_fn, validation_dataloader, train=False)
         
-        valid_metrics = calculate_metrics(vy_true_list, vy_pred_list)
+        valid_metrics = calculate_metrics(vy_true_list, vy_pred_list, valid_metrics)
 
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg

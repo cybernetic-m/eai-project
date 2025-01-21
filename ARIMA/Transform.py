@@ -1,7 +1,7 @@
 import torch as pt
 from torch.distributions.transforms import ComposeTransform
 from torch.distributions.constraints import independent, real
-from .torch_utils import jit_script
+from torch_utils import jit_script
 
 def calc_arma_transform(x, x_is_in_not_out, input, output, i_coefs, o_coefs, drift):
     assert(x_is_in_not_out.shape==x.shape[-1:])

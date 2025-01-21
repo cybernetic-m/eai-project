@@ -24,6 +24,8 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
 
         # Compute the loss_avg, y_pred and y_true
         loss_avg, y_true_list, y_pred_list = train_one_epoch(model, optimizer, loss_fn, training_dataloader, train=True)
+        
+        print(y_true_list)
 
         train_metrics = calculate_metrics(y_true_list, y_pred_list)
 
@@ -38,8 +40,7 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
             path = model.save(epoch)
             with open(path+'/hyperparam.json', 'w') as f:
                 json.dump(hyperparams, f)
-
-        print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'], train_metrics['r2'], train_metrics['rmse'], vloss_avg, valid_metrics['mae'], valid_metrics['r2'], valid_metrics['rmse']))
+        print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'][epoch], train_metrics['r2'][epoch], train_metrics['rmse'][epoch], vloss_avg, valid_metrics['mae'][epoch], valid_metrics['r2'][epoch], valid_metrics['rmse'][epoch]))
     
     with open(path+'/train_metrics.json', 'w') as f:
         json.dump(train_metrics, f)

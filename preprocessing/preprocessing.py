@@ -1,0 +1,131 @@
+import pandas as pd
+import os
+import torch
+
+def normalize_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+    """
+    Normalizes the specified columns in the DataFrame between 0 and 1.
+
+    Parameters:
+    df (pd.DataFrame): The input DataFrame containing the data.
+    columns (list): A list of column names to normalize.
+
+    Returns:
+    pd.DataFrame: A new DataFrame with the specified columns normalized.
+    """
+    # Make a copy of the DataFrame to avoid modifying the original
+    df_copy = df.copy()
+
+    for column in columns:
+        if column in df_copy.columns:
+            min_val = df_copy[column].min()
+            max_val = df_copy[column].max()
+
+            # Avoid division by zero if the column has a constant value
+            if max_val != min_val:
+                df_copy[column] = (df_copy[column] - min_val) / (max_val - min_val)
+            else:
+                # If the column has constant values, normalize to 0 (or 1, depends on the case)
+                df_copy[column] = 0
+        else:
+            print(f"Warning: Column '{column}' not found in DataFrame.")
+
+    return df_copy
+
+
+def merge_on_closest_time(df1, df2, time_col='time'):
+    # Ensure the 'time' columns are datetime objects
+    df1[time_col] = pd.to_datetime(df1[time_col])
+    df2[time_col] = pd.to_datetime(df2[time_col])
+
+    # Sort both dataframes by time (if not already sorted)
+    df1 = df1.sort_values(by=time_col).reset_index(drop=True)
+    df2 = df2.sort_values(by=time_col).reset_index(drop=True)
+
+    # Create an empty list to hold the merged rows
+    merged_rows = []
+
+    # Initialize pointers for both DataFrames
+    i, j = 0, 0
+
+    # Iterate through each row in df1 and find the closest time in df2
+    while i < len(df1):
+        row1 = df1.iloc[i]
+
+        # Move pointer j to the closest time in df2 (either before or after row1)
+        while j < len(df2) - 1 and abs(df2.iloc[j + 1][time_col] - row1[time_col]) < abs(df2.iloc[j][time_col] - row1[time_col]):
+            j += 1
+
+        # Get the closest row from df2
+        closest_row = df2.iloc[j]
+
+        # Combine the row from df1 with the closest row from df2
+        merged_row = pd.concat([row1, closest_row], axis=0)
+
+        # Reset the index of the concatenated row before appending to avoid duplicate indices
+        merged_rows.append(merged_row.reset_index(drop=True))
+
+        # Move the pointer for df1
+        i += 1
+
+    # Create a new DataFrame from the merged rows and reset the index
+    merged_df = pd.DataFrame(merged_rows)
+    merged_df.reset_index(drop=True, inplace=True)
+
+    return merged_df
+
+def transform_dataframe(df):
+    # Create an empty list to store the filled rows
+    filled_rows = []
+
+    # Iterate through each row in the DataFrame
+    for i, row in df.iterrows():
+        # If X1 is not NaN, we know this is a valid row for X1
+        if pd.notna(row['X1']):
+            x1_value = row['X1']
+            filled_rows.append({'time': row['time'], 'X1': x1_value, 'Y1': df.iloc[i+1]['Y1'], 'Z1': df.iloc[i+2]['Z1']})
+
+    # Convert the list of filled rows to a DataFrame
+    filled_df = pd.DataFrame(filled_rows)
+
+    # Now group the data by time and use the last available X1, Y1, and Z1 for each time
+    final_df = filled_df.groupby('time').last().reset_index()
+
+    return final_df
+
+
+def load_dataset_dict_pandas(csv_path):
+
+    # Initialization of the dictionary of input data (text) {'filename': ['hi ...','I am ...']}
+    text_dict = {}
+
+    filelist = os.listdir(csv_path) # List of all csv file ['filename_1.csv', ...]
+
+    # Iterate over all csv file in the directory
+    for filename in filelist:
+        # Initialization of the list containing all the texts in a csv file
+
+        text_dict[filename] = []
+        # Open the i-th csv file
+
+        test = pd.read_csv(csv_path + '/' + filename)
+        print(filename)
+        print(test.info())
+        
+def pad_collate_fn(batch):
+    # Separate the batch into X (features) and Y (targets)
+    X_batch = [item[0] for item in batch]  # Features
+    Y_batch = [item[1] for item in batch]  # Targets
+    
+    # Get the max length of the sequences in the X_batch
+    max_len = max([len(x) for x in X_batch])
+    
+    # Pad X values to the max length
+    padded_X_batch = torch.stack([
+        torch.cat([x, torch.zeros(max_len - len(x))]) if len(x) < max_len else x for x in X_batch
+    ])
+    
+    # Assuming Y doesn't require padding, stack Y as is
+    Y_batch = torch.stack(Y_batch)
+    
+    return padded_X_batch, Y_batch

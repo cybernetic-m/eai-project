@@ -46,13 +46,16 @@ class ensemble_model(nn.Module):
         prediction_tensor = torch.stack(prediction_list) # Transform a list of tensor in a tensor [torch.tensor[8,1,3], torch.tensor[8,1,3], torch.tensor[8,1,3]] -> torch.tensor[3, 8, 1, 3]
         #print(prediction_tensor.shape)
         if self.mode == 'average':
-            y = torch.mean(prediction_tensor, dim=0) # Do the average on dim=0 because it's the model dimension [3, 8 ,1, 3] where the 3 is the number of models
+            y = torch.mean(prediction_tensor, dim=0) # Do the average on dim=0 because it's the model dimension [3, 8 , 1, 3] where the 3 is the number of models
         if self.mode == 'mlp':
             prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
             y = self.voting_mlp(prediction_tensor)
         if self.mode == 'linear':
             prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
             y = self.voting_linear(prediction_tensor)
+        if self.mode == 'auto-weighted':
+            weights = self.weights.view(3,1,1,1) # Broadcasting of weights adding 3 dimension for multiplication to [3, 8, 1, 3]
+            y = (weights*prediction_tensor).sum(dim=0) # Do the weighted average (summing in dim=0 -> number of models)
         return y
     
     def update_weights(self, y_pred, y_true):
@@ -73,10 +76,11 @@ class ensemble_model(nn.Module):
             print(self.weights)
 
     def forward(self, x, y_true):
-     y_pred = [model(x) for model in self.models]
+     y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
      #print(y_pred[0].shape)
-     self.update_weights(y_pred, y_true)
-     y = self.voting(y_pred)
+     if self.mode == 'auto-weighted':
+        self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
+     y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
      return y
 
 
@@ -84,7 +88,7 @@ model_dict = {'mlp': {'layer_dim_list': [3,40,50,3]},
               'ARIMA': {'p': 2, 'd': 0, 'q': 2, 'ps': 1, 'ds': 1, 'qs': 1, 's': 1},
               'linear_regressor': {'in_features': 3, 'out_features': 3}
               }
-model = ensemble_model(model_dict, mode='linear')
+model = ensemble_model(model_dict, mode='auto-weighted')
 t = torch.rand(8, 1, 3) # Remember to pass from 4 values of temperature to 3 values of features and from 5 -> 1
 y_true = torch.rand(8, 1, 3)
 out = model(t, y_true)

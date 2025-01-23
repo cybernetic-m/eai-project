@@ -29,7 +29,22 @@ class mlp(nn.Module):
     self.linear_layers = nn.ModuleList([nn.Linear(layer_dim_list[i], layer_dim_list[i+1]) for i in range(len(layer_dim_list)-1)])
 
   def forward(self, x):
+    if len(x.shape) > 2:
+      x = x.view(x.shape[0], -1) # Flatten in case in which the tensor in input is [8, 5, 3] -> [8, 20]
     for layer in self.linear_layers:
       x = layer(x)
       x = F.relu(x)
+    x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
+    return x
+  
+class linear(nn.Module):
+  def __init__(self, in_features, out_features):
+    super(linear, self).__init__()
+    self.linear_layer = nn.Linear(in_features=in_features, out_features=out_features)
+
+  def forward(self, x):
+    if len(x.shape) > 2:
+      x = x.view(x.shape[0], -1) # Flatten in case in which the tensor in input is [8, 5, 3] -> [8, 20]
+    x = self.linear_layer(x)
+    x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
     return x

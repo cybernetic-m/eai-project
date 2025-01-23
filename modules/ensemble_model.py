@@ -11,42 +11,86 @@ from blocks import *
 
 class ensemble_model(nn.Module):
 
-    def __init__(self, model_dict):
-        super(ensemble_model)
+    def __init__(self, model_dict, mode):
+        super(ensemble_model,self).__init__()
         # model_dict is something like -> {'block_1': {'param_1': [10,20,30,3]}, 'block_2': {'param_1': [10,10], 'param_2': [20, 30]}, ...}
 
         self.models = [] # List of models
+        self.mode = mode # Modality of voting
     
         for model_name, model_param in model_dict.items():
             if model_name == 'ARIMA':
                 arima_block = ARIMA(**model_param)
                 self.models.append(arima_block)
             elif model_name == 'linear_regressor':
-                linear_block = nn.Linear(**model_param)
+                linear_block = linear(**model_param)
                 self.models.append(linear_block)
             elif model_name == 'mlp':
                 mlp_block = mlp(**model_param)
                 self.models.append(mlp_block)
         
-        self.voting_mlp = mlp([3*len(self.models), 4*len(self.models), 3])
+        self.n_models = len(self.models) # Number of models in the ensemble
+
+        # Learnable Voting layers
+        # (3*len(models) because in our problem each model give three predictions gradients (X1, Y1, Z1)
+        self.voting_mlp = mlp([3*self.n_models, 4*self.n_models, 3]) # MLP layer 
+        self.voting_linear = nn.Linear(in_features=3*self.n_models, out_features=3) # Linear layer 
+
+        # Weights initialization for auto weighted average system
+        self.weights = torch.ones(self.n_models) / self.n_models # In this way we have a tensor of uniform weighting [1/3, 1/3, 1/3] for example
+
         print("Ensemble Model Summary:", self.models)
 
-    def voting(self, prediction_list, mode):
-
-        if mode == 'average':
-            y = sum(prediction_list) / len(prediction_list)
-        if mode == 'mlp':
-            prediction_tensor = torch.tensor(prediction_list)
+    def voting(self, prediction_list):
+        #print(prediction_list)
+        prediction_tensor = torch.stack(prediction_list) # Transform a list of tensor in a tensor [torch.tensor[8,1,3], torch.tensor[8,1,3], torch.tensor[8,1,3]] -> torch.tensor[3, 8, 1, 3]
+        #print(prediction_tensor.shape)
+        if self.mode == 'average':
+            y = torch.mean(prediction_tensor, dim=0) # Do the average on dim=0 because it's the model dimension [3, 8 ,1, 3] where the 3 is the number of models
+        if self.mode == 'mlp':
+            prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
             y = self.voting_mlp(prediction_tensor)
+        if self.mode == 'linear':
+            prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
+            y = self.voting_linear(prediction_tensor)
+        return y
+    
+    def update_weights(self, y_pred, y_true):
+        model_losses = []
+        for n in range(self.n_models):
+            
+            #print(y_pred[n].shape)
+            #print(y_true.shape)
+            loss_n = (y_pred[n] - y_true)**2 # Dimension [8, 1, 3]
+            # Do the average among 8 samples in the batch (dim=0)
+            loss_n_avg_batch = torch.mean(loss_n, dim=0)
+            # Do the average among X1, Y1, Z1 losses (they are 3 losses, one for each axis gradients)
+            loss_n_avg_batch_gradients = torch.mean(loss_n_avg_batch, dim=1)
+            model_losses.append(loss_n_avg_batch_gradients) # Append the average loss among the batch
+            #print(model_losses[0].shape)
+            #print(self.weights.shape)
+            self.weights[n] = 1 / model_losses[n]
+            print(self.weights)
+
+    def forward(self, x, y_true):
+     y_pred = [model(x) for model in self.models]
+     #print(y_pred[0].shape)
+     self.update_weights(y_pred, y_true)
+     y = self.voting(y_pred)
+     return y
 
 
-'''
-model_dict = {'mlp': {'layer_dim_list': [10,20,30,3]},  
-              'ARIMA': {'p': 2, 'd': 1, 'q': 1, 'ps': 1, 'ds': 1, 'qs': 1, 's': 1},
-              'linear_regressor': {'in_features': 10, 'out_features': 3}
+model_dict = {'mlp': {'layer_dim_list': [3,40,50,3]},  
+              'ARIMA': {'p': 2, 'd': 0, 'q': 2, 'ps': 1, 'ds': 1, 'qs': 1, 's': 1},
+              'linear_regressor': {'in_features': 3, 'out_features': 3}
               }
-model = ensemble_model(model_dict)
-'''
+model = ensemble_model(model_dict, mode='linear')
+t = torch.rand(8, 1, 3) # Remember to pass from 4 values of temperature to 3 values of features and from 5 -> 1
+y_true = torch.rand(8, 1, 3)
+out = model(t, y_true)
+print(out.shape)
+
+
 
 
             

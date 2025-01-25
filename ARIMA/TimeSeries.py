@@ -78,8 +78,11 @@ class ARIMA(Transform, pt.nn.Module):
         >>> input_from_output = arima(output)
         >>> assert_array_almost_equal(input.detach().numpy(), input_from_output.detach().numpy(), 6)
     '''
-    def __init__(self, p, d, q, ps, ds, qs, s, drift=False, i_tail_type='zero', o_tail_type='full', output_transforms=[]):
+    def __init__(self, p, d, q, ps, ds, qs, s, device, drift=False, i_tail_type='zero', o_tail_type='full', output_transforms=[]):
         super().__init__()
+        
+        self.device = device
+        
         self.PD = PD(p, d)
         self.Q = BiasOnePolynomial(q)
         self.PDS = PD(ps, ds, s)
@@ -91,20 +94,29 @@ class ARIMA(Transform, pt.nn.Module):
         o_grad_params = self.PD.get_params() + self.PDS.get_params()
         self.o_grads, self.o_hesss = calc_grads_hesss(o_coefs, o_grad_params, o_grad_params[1:])
         self.o_coefs = pt.cat([o_coef[None] for o_coef in o_coefs]).detach().clone()
+        self.o_grads = [o_grads.to(device) for o_grads in self.o_grads]
+        self.o_hesss = [o_hesss.to(device) for o_hesss in self.o_hesss]
+        self.o_coefs = self.o_coefs.to(device)
+        
         
         # Calculate coefficients factors of innovations
         i_coefs = list((self.Q * self.QS).get_coefs())[::-1]
         i_grad_params = self.Q.get_params() + self.QS.get_params()
         self.i_grads, self.i_hesss = calc_grads_hesss(i_coefs, i_grad_params, i_grad_params[1:])
         self.i_coefs = pt.cat([i_coef[None] for i_coef in i_coefs]).detach().clone()
+        self.i_grads = [i_grads.to(device) for i_grads in self.i_grads]
+        self.i_hesss = [i_hesss.to(device) for i_hesss in self.i_hesss]
+        self.i_coefs = self.i_coefs.to(device)
         
-        self.drift = pt.nn.Parameter(pt.zeros(1)) if drift else pt.zeros(1)
-        self.i_tail = get_tail(i_tail_type, s, self.i_coefs)
-        self.o_tail = get_tail(o_tail_type, s, self.o_coefs)
+        
+        self.drift = pt.nn.Parameter(pt.zeros(1)).to(device) if drift else pt.zeros(1).to(device)
+        self.i_tail = get_tail(i_tail_type, s, self.i_coefs).to(device)
+        self.o_tail = get_tail(o_tail_type, s, self.o_coefs).to(device)
         
     def get_transform(self, x=None, idx=None, x_is_in_not_out=None):
         # Calculate coefficients of observations
         o_params = self.PD.get_params() + self.PDS.get_params()
+        o_params = [o_para.to(self.device) for o_para in o_params]
         o_coefs = self.o_coefs
         for o_grad, o_param in zip(self.o_grads, o_params):
             o_coefs = o_coefs + pt.matmul(o_grad, o_param[...,None])[...,0]
@@ -113,6 +125,7 @@ class ARIMA(Transform, pt.nn.Module):
 
         # Calculate coefficients of innovations
         i_params = self.Q.get_params() + self.QS.get_params()
+        i_params = [i_para.to(self.device) for i_para in i_params] 
         i_coefs = self.i_coefs
         for i_grad, i_param in zip(self.i_grads, i_params):
             i_coefs = i_coefs + pt.matmul(i_grad, i_param[..., None])[...,0]

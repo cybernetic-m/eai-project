@@ -1,0 +1,37 @@
+import torch.nn as nn
+from datetime import datetime
+import torch
+import os
+import sys
+
+modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
+sys.path.append(modules_path)
+
+from blocks import lstm
+
+class lstm_only(nn.Module):
+  def __init__(self, hidden_dim, input_dim, output_dim):
+    super(lstm_only, self).__init__()
+    self.extractor = lstm(hidden_dim, input_dim)
+    self.out = nn.Linear(hidden_dim, output_dim)
+
+  def forward(self, x):
+    #print(x.shape)
+    x = self.extractor(x)[:, -1, :]
+    x = self.out(x)
+    return x
+  
+  def save(self, epoch):
+
+    # Get current timestamp
+    current_time = datetime.now().strftime('%Y-%m-%d_%H')
+
+    # Create the directory of results
+    dir_path = 'results/training_' + current_time # path of type 'results/training_2024-12-22_14
+    os.makedirs(dir_path, exist_ok=True) # Create the directory
+
+    save_name = 'model_' + str(epoch) + '.pt' # Model name of the type 'model_50.pt' where 50 is the epoch 
+    save_path = os.path.join(dir_path, save_name) # path of type '/training_2024-12-22_14-57/model_50.pt
+    torch.save(self.state_dict(), save_path) # Save the model
+    print(f'Model saved to {save_path}')
+    return dir_path

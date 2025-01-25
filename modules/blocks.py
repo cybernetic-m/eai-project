@@ -2,24 +2,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class rnn(nn.Module):
+class rnn_extractor(nn.Module):
   def __init__(self, feature_dim, input_dim):
-    super(rnn, self).__init__()
+    super(rnn_extractor, self).__init__()
     self.rnn = nn.RNN(input_size=input_dim, hidden_size=feature_dim, batch_first=True)
 
   def forward(self, x):
     output, (hidden_state, cell_state) = self.rnn(x)
 
-    return output
-  
-class lstm(nn.Module):
+    return hidden_state
+   
+class lstm_extractor(nn.Module):
   def __init__(self, feature_dim, input_dim):
-    super(lstm, self).__init__()
+    super(lstm_extractor, self).__init__()
     self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, batch_first=True)
 
   def forward(self, x):
     output, (hidden_state, cell_state) = self.lstm(x)
-    return output
+    return hidden_state
   
 class mlp(nn.Module):
   # layer_dim_list: it is a list of layer dimension 
@@ -48,3 +48,23 @@ class linear(nn.Module):
     x = self.linear_layer(x)
     x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
     return x
+  
+class rnn(nn.Module):
+  def __init__(self, feature_dim, input_dim):
+    super(rnn, self).__init__()
+    self.rnn = nn.RNN(input_size=input_dim, hidden_size=feature_dim, batch_first=True)
+
+  def forward(self, x):
+    output, (hidden_state, cell_state) = self.rnn(x)
+    #print(hidden_state.shape)
+
+    return output
+  
+class lstm(nn.Module):
+  def __init__(self, feature_dim, input_dim):
+    super(lstm, self).__init__()
+    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, batch_first=True)
+
+  def forward(self, x):
+    output, (hidden_state, cell_state) = self.lstm(x)
+    return output

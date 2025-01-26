@@ -7,8 +7,8 @@ import sys
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
 
-from blocks import lstm_extractor
-from ensemble_model import ensemble_model
+from blocks import lstm_extractor # type: ignore
+from ensemble_model import ensemble_model # type: ignore
 
 class complete_model(nn.Module):
   def __init__(self, hidden_dim, input_dim, output_dim, model_dict, device, mode):

@@ -9,7 +9,7 @@ sys.path.append(training_path)
 sys.path.append(utils_path)
 
 from train_one_epoch import train_one_epoch
-from calculate_metrics import calculate_metrics
+from calculate_metrics import calculate_metrics # type: ignore
 
 import numpy as np
 import torch

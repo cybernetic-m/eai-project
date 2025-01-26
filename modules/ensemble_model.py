@@ -5,7 +5,7 @@ sys.path.append(arima_path)
 
 import torch
 import torch.nn as nn
-from TimeSeries import ARIMA
+from TimeSeries import ARIMA # type: ignore
 from blocks import *
 
 

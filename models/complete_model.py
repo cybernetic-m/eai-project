@@ -7,13 +7,19 @@ import sys
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
 
-from blocks import lstm_extractor # type: ignore
+from blocks import lstm, rnn # type: ignore
 from ensemble_model import ensemble_model # type: ignore
 
 class complete_model(nn.Module):
-  def __init__(self, hidden_dim, input_dim, model_dict, device, mode):
+  def __init__(self, hidden_dim, input_dim, model_dict, device, mode = 'auto-weighted', extractor = 'lstm'):
     super(complete_model, self).__init__()
-    self.extractor = lstm_extractor(hidden_dim, input_dim).to(device)
+
+    # Define the feature extractors LSTM and RNN that extract the features 
+    # (hidden state) to send to the ensemble model
+    if extractor == 'lstm':
+      self.lstm_extractor = lstm(hidden_dim, input_dim).to(device)
+    elif extractor == 'rnn':
+      self.rnn_extractor = rnn(hidden_dim, input_dim).to(device)
     
     self.ensamble = ensemble_model(model_dict, device, mode=mode)
 
@@ -55,7 +61,7 @@ if __name__ == '__main__' :
   else:
       device = "cpu"
 
-  model = complete_model(3, 4, 3, model_dict, device, mode='auto-weighted')
+  model = complete_model(3, 4, 3, model_dict, device, mode='auto-weighted', extractor='lstm')
   t = torch.rand(8, 5, 4).to(device) # Remember to pass from 4 values of temperature to 3 values of features and from 5 -> 1
   y_true = torch.rand(8, 1, 3).to(device)
   out = model(t, y_true)

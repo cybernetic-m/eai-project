@@ -8,7 +8,7 @@ class rnn(nn.Module):
     self.rnn = nn.RNN(input_size=input_dim, hidden_size=feature_dim, batch_first=True)
 
   def forward(self, x):
-    output, (hidden_state, cell_state) = self.rnn(x)
+    output, hidden_state = self.rnn(x)
 
     return hidden_state, output
    

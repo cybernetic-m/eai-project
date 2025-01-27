@@ -14,7 +14,7 @@ from calculate_metrics import calculate_metrics # type: ignore
 import numpy as np
 import torch
 
-def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation_dataloader, hyperparams, complete): 
+def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation_dataloader, hyperparams, model_dict, complete): 
 
     best_vloss = 1000000000
 
@@ -47,9 +47,16 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg
             path = model.save(epoch)
-            with open(path+'/hyperparam.json', 'w') as f:
-                json.dump(hyperparams, f)
+
         print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'][epoch], train_metrics['r2'][epoch], train_metrics['rmse'][epoch], vloss_avg, valid_metrics['mae'][epoch], valid_metrics['r2'][epoch], valid_metrics['rmse'][epoch]))
     
+    # Save in JSON files the hyperparameter list, the structure of the ensemble model (if you are using it), the metrics of train and validation
+    with open(path+'/hyperparam.json', 'w') as f:
+        json.dump(hyperparams, f)
+    if complete==True:
+        with open(path+'/ensemble.json', 'w') as f:
+            json.dump(model_dict, f)
     with open(path+'/train_metrics.json', 'w') as f:
         json.dump(train_metrics, f)
+    with open(path+'/valid_metrics.json', 'w') as f:
+        json.dump(valid_metrics, f)

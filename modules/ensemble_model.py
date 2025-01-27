@@ -84,6 +84,7 @@ class ensemble_model(nn.Module):
      y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
      return y
  
+'''
 if __name__ == '__main__' :
 
     if torch.cuda.is_available():
@@ -103,7 +104,7 @@ if __name__ == '__main__' :
     y_true = torch.rand(8, 1, 3).to(device)
     out = arima(t)
     print(out.shape)
-
+'''
 
 
 

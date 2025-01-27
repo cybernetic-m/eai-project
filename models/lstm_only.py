@@ -21,7 +21,7 @@ class lstm_only(nn.Module):
     x = self.out(x)
     return x
   
-  def save(self, epoch):
+  def save(self):
 
     # Get current timestamp
     current_time = datetime.now().strftime('%Y-%m-%d_%H')
@@ -30,8 +30,13 @@ class lstm_only(nn.Module):
     dir_path = 'results/training_' + current_time # path of type 'results/training_2024-12-22_14
     os.makedirs(dir_path, exist_ok=True) # Create the directory
 
-    save_name = 'model_' + str(epoch) + '.pt' # Model name of the type 'model_50.pt' where 50 is the epoch 
-    save_path = os.path.join(dir_path, save_name) # path of type '/training_2024-12-22_14-57/model_50.pt
+    save_name = 'model.pt' # Model name
+    save_path = os.path.join(dir_path, save_name) # path of type '/training_2024-12-22_14-57/model.pt
     torch.save(self.state_dict(), save_path) # Save the model
     print(f'Model saved to {save_path}')
     return dir_path
+  
+  def load(self, path):
+    state_dict = torch.load(path, map_location=torch.device('cpu'))
+    self.load_state_dict(state_dict)
+    print("loaded:", path)

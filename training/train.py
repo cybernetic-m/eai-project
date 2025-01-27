@@ -46,7 +46,7 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
 
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg
-            path = model.save(epoch)
+            path = model.save()
 
         print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'][epoch], train_metrics['r2'][epoch], train_metrics['rmse'][epoch], vloss_avg, valid_metrics['mae'][epoch], valid_metrics['r2'][epoch], valid_metrics['rmse'][epoch]))
     

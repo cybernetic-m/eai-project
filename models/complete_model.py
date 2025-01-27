@@ -32,7 +32,7 @@ class complete_model(nn.Module):
   def save(self):
 
     # Get current timestamp
-    current_time = datetime.now().strftime('%Y-%m-%d_%H')
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
 
     # Create the directory of results
     dir_path = 'results/training_' + current_time # path of type 'results/training_2024-12-22_14

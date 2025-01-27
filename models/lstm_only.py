@@ -18,7 +18,7 @@ class lstm_only(nn.Module):
   def forward(self, x):
     #print(x.shape)
     h, o = self.extractor(x)
-    o = o.permute(1, 0, 2)
+    o = o[:, -1, :]
     x = self.out(o)
     return x
   

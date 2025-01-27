@@ -24,7 +24,7 @@ class complete_model(nn.Module):
     self.ensamble = ensemble_model(model_dict, device, mode=mode)
 
   def forward(self, x, y_true):
-    h, _ = self.extractor(x) # Take the hidden state as features
+    h, o = self.extractor(x) # Take the hidden state as features
     h = h.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
     out = self.ensamble(h, y_true)
     return out
@@ -69,5 +69,5 @@ if __name__ == '__main__' :
   t = torch.rand(8, 5, 4).to(device) # Remember to pass from 4 values of temperature to 3 values of features and from 5 -> 1
   y_true = torch.rand(8, 1, 3).to(device)
   out = model(t, y_true)
-  print(out.shape)
+  #print(out.shape)
 '''

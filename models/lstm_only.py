@@ -10,15 +10,16 @@ sys.path.append(modules_path)
 from blocks import lstm
 
 class lstm_only(nn.Module):
-  def __init__(self, hidden_dim, input_dim, output_dim):
+  def __init__(self, hidden_dim, input_dim, output_dim, timesteps):
     super(lstm_only, self).__init__()
     self.extractor = lstm(hidden_dim, input_dim)
-    self.out = nn.Linear(hidden_dim, output_dim)
+    self.out = nn.Linear(timesteps*hidden_dim, output_dim)
 
   def forward(self, x):
     #print(x.shape)
     h, o = self.extractor(x)
-    o = o[:, -1, :]
+    o = o.view(o.shape[0], -1) # Flatten to send in Linear
+    #o = o[:, -1, :] # [8,5,3] -> [8, 1, 3] Take only the last timestep
     x = self.out(o)
     return x
   

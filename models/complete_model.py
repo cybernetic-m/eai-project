@@ -11,16 +11,16 @@ from blocks import lstm_extractor # type: ignore
 from ensemble_model import ensemble_model # type: ignore
 
 class complete_model(nn.Module):
-  def __init__(self, hidden_dim, input_dim, output_dim, model_dict, device, mode):
+  def __init__(self, hidden_dim, input_dim, model_dict, device, mode):
     super(complete_model, self).__init__()
     self.extractor = lstm_extractor(hidden_dim, input_dim).to(device)
-    self.out = nn.Linear(hidden_dim, output_dim).to(device)
-    self.ensamble = ensemble_model(model_dict, device, mode='auto-weighted')
+    
+    self.ensamble = ensemble_model(model_dict, device, mode=mode)
 
   def forward(self, x, y_true):
     #print(x.shape)
     x = self.extractor(x)
-    x = x.permute(1, 0, 2)
+    x = x.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3]
     #print(x.shape)
     x = self.ensamble(x, y_true)
     return x
@@ -39,6 +39,7 @@ class complete_model(nn.Module):
     torch.save(self.state_dict(), save_path) # Save the model
     print(f'Model saved to {save_path}')
     return dir_path
+  
 if __name__ == '__main__' :
 
   model_dict = {'mlp': {'layer_dim_list': [3,40,50,3]},  

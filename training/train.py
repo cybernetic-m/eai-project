@@ -14,7 +14,7 @@ from calculate_metrics import calculate_metrics # type: ignore
 import numpy as np
 import torch
 
-def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation_dataloader, hyperparams, model_dict, complete): 
+def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader, validation_dataloader, hyperparams, model_dict, complete): 
 
     best_vloss = 1000000000
 
@@ -47,6 +47,8 @@ def train(num_epochs, loss_fn, model, optimizer, training_dataloader, validation
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg
             path = model.save()
+            
+        scheduler.step()
 
         print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'][epoch], train_metrics['r2'][epoch], train_metrics['rmse'][epoch], vloss_avg, valid_metrics['mae'][epoch], valid_metrics['r2'][epoch], valid_metrics['rmse'][epoch]))
     

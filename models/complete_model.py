@@ -7,8 +7,8 @@ import sys
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
 
-from blocks import lstm, rnn # type: ignore
-from ensemble_model import ensemble_model # type: ignore
+from blocks import lstm, rnn
+from ensemble_model import ensemble_model
 
 class complete_model(nn.Module):
   def __init__(self, hidden_dim, input_dim, model_dict, device, mode='auto-weighted', extractor_type='lstm'):
@@ -22,6 +22,8 @@ class complete_model(nn.Module):
       self.extractor = rnn(hidden_dim, input_dim).to(device)
     
     self.ensamble = ensemble_model(model_dict, device, mode=mode)
+    # Get current timestamp
+    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
 
   def forward(self, x, y_true):
     h, o = self.extractor(x) # Take the hidden state as features
@@ -31,11 +33,8 @@ class complete_model(nn.Module):
   
   def save(self):
 
-    # Get current timestamp
-    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
-
     # Create the directory of results
-    dir_path = 'results/training_' + current_time # path of type 'results/training_2024-12-22_14
+    dir_path = 'results/training_' + self.current_time # path of type 'results/training_2024-12-22_14
     os.makedirs(dir_path, exist_ok=True) # Create the directory
 
     save_name = 'model.pt' # Model name

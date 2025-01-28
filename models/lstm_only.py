@@ -14,22 +14,22 @@ class lstm_only(nn.Module):
     super(lstm_only, self).__init__()
     self.extractor = lstm(hidden_dim, input_dim)
     self.out = nn.Linear(timesteps*hidden_dim, output_dim)
+    # Get current timestamp
+    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
 
   def forward(self, x):
     #print(x.shape)
     h, o = self.extractor(x)
-    o = o.view(o.shape[0], -1) # Flatten to send in Linear
+    o = o.reshape(o.shape[0], -1) # Flatten to send in Linear
     #o = o[:, -1, :] # [8,5,3] -> [8, 1, 3] Take only the last timestep
     x = self.out(o)
     return x
   
   def save(self):
 
-    # Get current timestamp
-    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
 
     # Create the directory of results
-    dir_path = 'results/training_' + current_time # path of type 'results/training_2024-12-22_14
+    dir_path = 'results/training_' + self.current_time # path of type 'results/training_2024-12-22_14
     os.makedirs(dir_path, exist_ok=True) # Create the directory
 
     save_name = 'model.pt' # Model name

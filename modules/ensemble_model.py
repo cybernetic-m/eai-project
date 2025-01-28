@@ -75,6 +75,7 @@ class ensemble_model(nn.Module):
                 #print(self.weights.shape)
                 self.weights[n] = 1 / model_losses[n]
                 #print(self.weights)
+                self.weights = torch.softmax(self.weights, dim=0)
 
     def forward(self, x, y_true):
      y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]

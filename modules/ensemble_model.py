@@ -63,10 +63,10 @@ class ensemble_model(nn.Module):
         with torch.no_grad():
             for n in range(self.n_models):
                 
-                print(y_pred[n].shape)
-                print(y_true.shape)
+                #print(y_pred[n].shape)
+                #print(y_true.shape)
                 loss_n = (y_pred[n] - y_true)**2 # Dimension [8, 1, 3]
-                print(loss_n.shape)
+                #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
                 loss_n_avg_batch = torch.mean(loss_n, dim=0)
                 # Do the average among X1, Y1, Z1 losses (they are 3 losses, one for each axis gradients)

@@ -63,9 +63,10 @@ class ensemble_model(nn.Module):
         with torch.no_grad():
             for n in range(self.n_models):
                 
-                #print(y_pred[n].shape)
-                #print(y_true.shape)
+                print(y_pred[n].shape)
+                print(y_true.shape)
                 loss_n = (y_pred[n] - y_true)**2 # Dimension [8, 1, 3]
+                print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
                 loss_n_avg_batch = torch.mean(loss_n, dim=0)
                 # Do the average among X1, Y1, Z1 losses (they are 3 losses, one for each axis gradients)
@@ -75,7 +76,9 @@ class ensemble_model(nn.Module):
                 #print(self.weights.shape)
                 self.weights[n] = 1 / model_losses[n]
                 #print(self.weights)
-                self.weights = torch.softmax(self.weights, dim=0)
+                # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
+                # such that their sum to one (dim=0 because the tensor shape is simply [3])
+                self.weights = torch.softmax(self.weights, dim=0) 
 
     def forward(self, x, y_true):
      y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]

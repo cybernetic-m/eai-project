@@ -22,8 +22,8 @@ class complete_model(nn.Module):
       self.extractor = rnn(hidden_dim, input_dim).to(device)
     
     self.ensamble = ensemble_model(model_dict, device, mode=mode)
-    # Get current timestamp
-    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    # Get current timestamp for the save method
+    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M') 
 
   def forward(self, x, y_true):
     h, o = self.extractor(x) # Take the hidden state as features

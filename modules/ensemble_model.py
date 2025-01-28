@@ -18,18 +18,22 @@ class ensemble_model(nn.Module):
         self.models = nn.ModuleList() # List of models
         self.mode = mode # Modality of voting
     
-        for model_name, model_param in model_dict.items():
+        for model_name, model_param_list in model_dict.items():
             if model_name == 'ARIMA':
-                arima_block = ARIMA(**model_param, device=device)
-                self.models.append(arima_block)
+                for model_param in model_param_list:
+                    arima_block = ARIMA(**model_param, device=device)
+                    self.models.append(arima_block)
             elif model_name == 'linear_regressor':
-                linear_block = linear(**model_param).to(device)
-                self.models.append(linear_block)
+                for model_param in model_param_list:
+                    linear_block = linear(**model_param).to(device)
+                    self.models.append(linear_block)
             elif model_name == 'mlp':
-                mlp_block = mlp(**model_param).to(device)
-                self.models.append(mlp_block)
+                for model_param in model_param_list:
+                    mlp_block = mlp(**model_param).to(device)
+                    self.models.append(mlp_block)
         
         self.n_models = len(self.models) # Number of models in the ensemble
+        print(self.n_models)
 
         # Learnable Voting layers
         # (3*len(models) because in our problem each model give three predictions gradients (X1, Y1, Z1)
@@ -54,7 +58,7 @@ class ensemble_model(nn.Module):
             prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
             y = self.voting_linear(prediction_tensor)
         if self.mode == 'auto-weighted':
-            weights = self.weights.view(3,1,1,1) # Broadcasting of weights adding 3 dimension for multiplication to [3, 8, 1, 3]
+            weights = self.weights.view(self.n_models,1,1,1) # Broadcasting of weights adding 3 dimension for multiplication to [3, 8, 1, 3]
             y = (weights*prediction_tensor).sum(dim=0) # Do the weighted average (summing in dim=0 -> number of models)
         return y
     

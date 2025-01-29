@@ -95,4 +95,4 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
     with open(results_path +'/test_metrics.json', 'w') as f:
         json.dump(test_metrics, f)
    
-    return test_metrics, loss_avg, total_inference_time, inference_time_avg 
+    return test_metrics, loss_avg, total_inference_time, inference_time_avg, y_true_list, y_pred_list

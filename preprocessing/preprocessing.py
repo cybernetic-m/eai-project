@@ -2,13 +2,15 @@ import pandas as pd
 import os
 import torch
 
-def normalize_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+def normalize_columns(df: pd.DataFrame, columns: list, new_min: float, new_max: float) -> pd.DataFrame:
     """
-    Normalizes the specified columns in the DataFrame between 0 and 1.
+    Normalizes the specified columns in the DataFrame between new_min and new_max.
 
     Parameters:
     df (pd.DataFrame): The input DataFrame containing the data.
     columns (list): A list of column names to normalize.
+    new_min (float): The minimum value of the normalized range.
+    new_max (float): The maximum value of the normalized range.
 
     Returns:
     pd.DataFrame: A new DataFrame with the specified columns normalized.
@@ -23,10 +25,10 @@ def normalize_columns(df: pd.DataFrame, columns: list) -> pd.DataFrame:
 
             # Avoid division by zero if the column has a constant value
             if max_val != min_val:
-                df_copy[column] = (df_copy[column] - min_val) / (max_val - min_val)
+                df_copy[column] = new_min + (df_copy[column] - min_val) * (new_max - new_min) / (max_val - min_val)
             else:
-                # If the column has constant values, normalize to 0 (or 1, depends on the case)
-                df_copy[column] = 0
+                # If the column has constant values, normalize to new_min (or new_max, depends on the case)
+                df_copy[column] = new_min
         else:
             print(f"Warning: Column '{column}' not found in DataFrame.")
 
@@ -112,20 +114,3 @@ def load_dataset_dict_pandas(csv_path):
         print(filename)
         print(test.info())
         
-def pad_collate_fn(batch):
-    # Separate the batch into X (features) and Y (targets)
-    X_batch = [item[0] for item in batch]  # Features
-    Y_batch = [item[1] for item in batch]  # Targets
-    
-    # Get the max length of the sequences in the X_batch
-    max_len = max([len(x) for x in X_batch])
-    
-    # Pad X values to the max length
-    padded_X_batch = torch.stack([
-        torch.cat([x, torch.zeros(max_len - len(x))]) if len(x) < max_len else x for x in X_batch
-    ])
-    
-    # Assuming Y doesn't require padding, stack Y as is
-    Y_batch = torch.stack(Y_batch)
-    
-    return padded_X_batch, Y_batch

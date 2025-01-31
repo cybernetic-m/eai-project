@@ -137,9 +137,9 @@ def my_gradient(dataset, window_size):
         z1_data = samples[:,2] 
         
         # Fit a line to 100 points of X1, Y1, Z1
-        x1_line = x_line.fit(x=range(100), y=x1_data, deg=1) 
-        y1_line = y_line.fit(x=range(100), y=y1_data, deg=1) 
-        z1_line = z_line.fit(x=range(100), y=z1_data, deg=1) 
+        x1_line = x_line.fit(x=range(window_size), y=x1_data, deg=1) 
+        y1_line = y_line.fit(x=range(window_size), y=y1_data, deg=1) 
+        z1_line = z_line.fit(x=range(window_size), y=z1_data, deg=1) 
         
         # Return the coefficients in form [q,m] and take the angular coefficients
         x1_m = x1_line.convert().coef[1] 

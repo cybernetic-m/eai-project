@@ -22,7 +22,7 @@ class ensemble_model(nn.Module):
             if model_name == 'ARIMA':
                 for model_param in model_param_list:
                     arima_block = ARIMA(**model_param, device=device)
-                    self.models.append(arima_block)
+                    self.arima = arima_block
             elif model_name == 'linear_regressor':
                 for model_param in model_param_list:
                     linear_block = linear(**model_param).to(device)
@@ -32,7 +32,7 @@ class ensemble_model(nn.Module):
                     mlp_block = mlp(**model_param).to(device)
                     self.models.append(mlp_block)
         
-        self.n_models = len(self.models) # Number of models in the ensemble
+        self.n_models = len(self.models)+1 # Number of models in the ensemble
         print(self.n_models)
 
         # Learnable Voting layers
@@ -69,7 +69,7 @@ class ensemble_model(nn.Module):
                 
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
-                loss_n = (y_pred[n] - y_true)**2 # Dimension [8, 1, 3]
+                loss_n = (y_pred[n] - y_true[:,1,:].unsqueeze(1))**2 # Dimension [8, 1, 3]
                 #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
                 loss_n_avg_batch = torch.mean(loss_n, dim=0)
@@ -85,12 +85,16 @@ class ensemble_model(nn.Module):
                 self.weights = torch.softmax(self.weights, dim=0) 
 
     def forward(self, x, y_true):
-     y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
-     #print(y_pred[0].shape)
-     if self.mode == 'auto-weighted':
-        self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
-     y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
-     return y
+        y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+        #print(y_true[:,0,:].shape)
+        y_pred.append(self.arima(y_true[:,0,:].unsqueeze(1))) # [8,1,3]
+        #print(y_pred[0].shape)
+        #print(y_pred[1].shape)
+        #print(y_pred[2].shape)
+        if self.mode == 'auto-weighted':
+            self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
+        y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
+        return y
  
 '''
 if __name__ == '__main__' :

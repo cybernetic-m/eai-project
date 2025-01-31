@@ -52,7 +52,7 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
             # If we use ensemble model, then the model forward method should have y_true for the voting system
             # Else (LSTM only) the forward need only the input x
             if complete:
-                y_true = y_true.unsqueeze(1).detach() # [256, 3] -> [256, 1, 3] Add a dimension 1
+                y_true = y_true.detach() # 
                 y_pred = model(x, y_true)  # y_pred = []
                 print("y_pred:", y_pred.shape)
             else:
@@ -65,17 +65,14 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
             inference_time_list.append(inference_time) # Append the inference time for each batch in the list
 
             # Compute the loss
-            loss_value = loss_fn(y_pred, y_true)
+            loss_value = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
             loss += loss_value.detach().item() # Incremental value for the average
 
             # Create the list of the y_true and y_pred
             # Transform the tensor(, device='cuda:0') in a list [] and summing the lists y_true_list = [ ...]
-            if complete:
-                y_true_list += y_true.squeeze(1).detach().tolist()
-                y_pred_list += y_pred.squeeze(1).detach().tolist()
-            else:
-                y_true_list += y_true.detach().tolist()
-                y_pred_list += y_pred.detach().tolist()
+            y_true_list += y_true[:,1,:].cpu().tolist()
+            y_pred_list += y_pred.squeeze(1).cpu().tolist()
+
             print("List of y_true:", y_true_list)
             print("List of y_pred:", y_pred_list)
             

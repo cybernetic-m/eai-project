@@ -25,14 +25,15 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, train):
         
         # Make predictions
         if complete:
-            y_true = y_true.unsqueeze(1).detach()
+            y_true = y_true.detach()
             y_pred = model(X, y_true)
         else:
             y_pred = model(X)
         #print(y_pred)
 
         # Compute the loss
-        loss = loss_fn(y_pred, y_true)
+        
+        loss = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
 
         if train:
             # Compute the gradient
@@ -45,12 +46,8 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, train):
         loss_epoch += loss.detach().item()
 
         # Add predictions and true values to the lists
-        if complete:
-            y_true_list += y_true.squeeze(1).cpu().tolist()
-            y_pred_list += y_pred.squeeze(1).cpu().tolist()
-        else:
-            y_true_list += y_true.cpu().tolist()
-            y_pred_list += y_pred.cpu().tolist()
+        y_true_list += y_true[:,1,:].cpu().tolist()
+        y_pred_list += y_pred.squeeze(1).cpu().tolist()
 
         del X, y_true, y_pred, loss
         gc.collect()

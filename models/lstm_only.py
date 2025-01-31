@@ -20,10 +20,11 @@ class lstm_only(nn.Module):
   def forward(self, x):
     #print(x.shape)
     h, o = self.extractor(x)
+    #print(o.shape)
     o = o.reshape(o.shape[0], -1) # Flatten to send in Linear
     #o = o[:, -1, :] # [8,5,3] -> [8, 1, 3] Take only the last timestep
     x = self.out(o)
-    return x
+    return x.unsqueeze(1)
   
   def save(self):
 

@@ -21,14 +21,14 @@ class complete_model(nn.Module):
     elif extractor_type == 'rnn':
       self.extractor = rnn(hidden_dim, input_dim).to(device)
     
-    self.ensamble = ensemble_model(model_dict, device, mode=mode)
+    self.ensemble = ensemble_model(model_dict, device, mode=mode)
     # Get current timestamp for the save method
     self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M') 
 
   def forward(self, x, y_true):
     h, o = self.extractor(x) # Take the hidden state as features
     h = h.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
-    out = self.ensamble(h, y_true)
+    out = self.ensemble(h, y_true)
     return out
   
   def save(self):

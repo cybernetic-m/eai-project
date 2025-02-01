@@ -39,10 +39,10 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
         for i, data in enumerate(test_dataloader):
 
             # Take input and label from the list [input, label]
-            print("Data: ", data)
+            #print("Data: ", data)
             x, y_true = data       # tuple of tensor -> data = ([8,5,4], [8,3]) where 8 is batch size
-            print("x: ", x.shape)
-            print("y_true: ", y_true.shape)
+            #print("x: ", x.shape)
+            #print("y_true: ", y_true.shape)
                
             # Counting the time for inference
             # Start counter
@@ -54,10 +54,10 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
             if complete:
                 y_true = y_true.detach() # 
                 y_pred = model(x, y_true)  # y_pred = []
-                print("y_pred:", y_pred.shape)
+                #print("y_pred:", y_pred.shape)
             else:
                 y_pred = model(x)
-                print("y_pred:", y_pred.shape)
+                #print("y_pred:", y_pred.shape)
 
             # Stop counter
             end_time = time.time()
@@ -73,8 +73,8 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
             y_true_list += y_true[:,1,:].cpu().tolist()
             y_pred_list += y_pred.squeeze(1).cpu().tolist()
 
-            print("List of y_true:", y_true_list)
-            print("List of y_pred:", y_pred_list)
+            #print("List of y_true:", y_true_list)
+            #print("List of y_pred:", y_pred_list)
             
     # Average Loss in testing
     loss_avg = loss / len(test_dataloader)   # tensor(value, device = 'cuda:0')

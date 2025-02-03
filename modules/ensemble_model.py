@@ -11,7 +11,7 @@ from blocks import *
 
 class ensemble_model(nn.Module):
 
-    def __init__(self, model_dict, device, mode):
+    def __init__(self, model_dict, device, mode, gamma=0.9):
         super(ensemble_model,self).__init__()
         # model_dict is something like -> {'block_1': {'param_1': [10,20,30,3]}, 'block_2': {'param_1': [10,10], 'param_2': [20, 30]}, ...}
 
@@ -43,6 +43,8 @@ class ensemble_model(nn.Module):
         # Weights initialization for auto weighted average system
         self.weights = torch.ones(self.n_models).to(device) / self.n_models # In this way we have a tensor of uniform weighting [1/3, 1/3, 1/3] for example
 
+        self.gamma = gamma
+        
         print("Ensemble Model Summary:", self.models)
 
     def voting(self, prediction_list):
@@ -78,7 +80,8 @@ class ensemble_model(nn.Module):
                 model_losses.append(loss_n_avg_batch_gradients) # Append the average loss among the batch
                 #print(model_losses[n].shape)
                 #print(self.weights.shape)
-                self.weights[n] = 1 / model_losses[n]
+                weight = 1 / model_losses[n]
+                self.weights[n] = self.gamma * weight + (1-self.gamma) * self.weights[n]
                 #print(self.weights)
                 # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
                 # such that their sum to one (dim=0 because the tensor shape is simply [3])

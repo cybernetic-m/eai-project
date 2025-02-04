@@ -142,17 +142,17 @@ def my_gradient(dataset, window_size):
         
         # Return the coefficients in form [q,m] and take the angular coefficients
         # Check if the data is constant
-        if np.std(x1_data) < 0.031:
+        if len(x1_line.convert().coef)==1:
             print("error")
             x1_m = 0
         else:
             x1_m = x1_line.convert().coef[1] 
-        if np.std(y1_data) < 0.031:
+        if len(y1_line.convert().coef)==1:
             print("error")
             y1_m = 0
         else:
             y1_m = y1_line.convert().coef[1]
-        if np.std(z1_data) < 0.031:
+        if len(z1_line.convert().coef)==1:
             print("error")
             z1_m = 0
         else:
@@ -160,7 +160,7 @@ def my_gradient(dataset, window_size):
 
         # Append the value of the gradients
         gradients.append([x1_m, y1_m, z1_m])
-    print(j)
+    print("errors:",j)
     return np.array(gradients) 
 
 def split(listToSplit, splitPercentages):

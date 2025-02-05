@@ -13,7 +13,7 @@ class thermal_dataset(torch.utils.data.Dataset):
       target = data[1][i:i+2]
       #print(target.shape)
       if target.shape != (2,3):
-        print('error')
+        #print('error')
         continue
       y.append(target)
       X.append(feature)

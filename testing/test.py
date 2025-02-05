@@ -86,7 +86,7 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
     inference_time_avg = total_inference_time / len(inference_time_list) 
     
     # Calculate the metrics
-    test_metrics = calculate_metrics(y_true_list, y_pred_list, test_metrics)
+    test_metrics = calculate_metrics(y_true_list, y_pred_list, test_metrics, train=False)
 
     # We take all the path without "model.pt" 
     # (Ex. "./results/training_2025-01-28_11-11/model.pt" -> "./results/training_2025-01-28_11-11/")

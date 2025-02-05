@@ -49,8 +49,15 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
             path = model.save()
             
         scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
-
-        print("train: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f --- valid: LOSS %.4f MAE %.4f R2 %.4f RMSE %.4f" % (loss_avg, train_metrics['mae'][epoch], train_metrics['r2'][epoch], train_metrics['rmse'][epoch], vloss_avg, valid_metrics['mae'][epoch], valid_metrics['r2'][epoch], valid_metrics['rmse'][epoch]))
+        
+        print("train: LOSS %.6f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.4f, Y1:%.4f, Z1:%.4f"
+              % (loss_avg, train_metrics['mae'][epoch][0], train_metrics['mae'][epoch][1], train_metrics['mae'][epoch][2]
+                 ,train_metrics['r2'][epoch][0],train_metrics['r2'][epoch][1],train_metrics['r2'][epoch][2]
+                 ,train_metrics['rmse'][epoch][0],train_metrics['rmse'][epoch][1],train_metrics['rmse'][epoch][2]))
+        print("valid: LOSS %.6f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.4f, Y1:%.4f, Z1:%.4f" 
+              % (vloss_avg, valid_metrics['mae'][epoch][0], valid_metrics['mae'][epoch][1], valid_metrics['mae'][epoch][2]
+                 ,valid_metrics['r2'][epoch][0],valid_metrics['r2'][epoch][1],valid_metrics['r2'][epoch][2]
+                 ,valid_metrics['rmse'][epoch][0],valid_metrics['rmse'][epoch][1],valid_metrics['rmse'][epoch][2]))
     
     # Save in JSON files the hyperparameter list, the structure of the ensemble model (if you are using it), the metrics of train and validation
     with open(path+'/hyperparam.json', 'w') as f:

@@ -17,12 +17,13 @@ class ensemble_model(nn.Module):
 
         self.models = nn.ModuleList() # List of models
         self.mode = mode # Modality of voting
-    
+        self.arima_models = nn.ModuleList()
+        self.rnn_models = nn.ModuleList()
         for model_name, model_param_list in model_dict.items():
             if model_name == 'ARIMA':
                 for model_param in model_param_list:
                     arima_block = ARIMA(**model_param, device=device)
-                    self.arima = arima_block
+                    self.arima_models.append(arima_block)
             elif model_name == 'linear_regressor':
                 for model_param in model_param_list:
                     linear_block = linear(**model_param).to(device)
@@ -31,6 +32,14 @@ class ensemble_model(nn.Module):
                 for model_param in model_param_list:
                     mlp_block = mlp(**model_param).to(device)
                     self.models.append(mlp_block)
+            elif model_name == 'rnn':
+                for model_param in model_param_list:
+                    rnn_block = rnn(**model_param).to(device)
+                    self.rnn_models.append(rnn_block)
+            elif model_name == 'lstm':
+                for model_param in model_param_list:
+                    lstm_block = lstm(**model_param).to(device)
+                    self.rnn_models.append(lstm_block)
         
         self.n_models = len(self.models)+1 # Number of models in the ensemble
         print(self.n_models)
@@ -45,7 +54,7 @@ class ensemble_model(nn.Module):
 
         self.gamma = gamma
         
-        print("Ensemble Model Summary:", self.models)
+        print("Ensemble Model Summary:", self.models, self.arima_models, self.rnn_models)
 
     def voting(self, prediction_list):
         #print(prediction_list)
@@ -88,12 +97,18 @@ class ensemble_model(nn.Module):
                 self.weights = torch.softmax(self.weights, dim=0) 
 
     def forward(self, x, y_true):
-        y_pred = [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+        y_pred = []
+        if self.models:
+            y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
         #print(y_true[:,0,:].shape)
-        y_pred.append(self.arima(y_true[:,0,:].unsqueeze(1))) # [8,1,3]
+        if self.arima_models:
+            y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
+        if self.rnn_models:
+            y_pred += [model(x)[1] for model in self.rnn_models]
         #print(y_pred[0].shape)
         #print(y_pred[1].shape)
         #print(y_pred[2].shape)
+        #print("y_pred:",y_pred)
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]

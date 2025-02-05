@@ -97,7 +97,7 @@ class ensemble_model(nn.Module):
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
-        return y
+        return y#, y_pred
  
 '''
 if __name__ == '__main__' :

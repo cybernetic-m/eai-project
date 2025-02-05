@@ -17,9 +17,12 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
 
     # Definition of the test metrics dictionary
     test_metrics = {
-        'rmse':[], 
+        'rmse':[],
+        'rmse_ref':[],
         'mae':[],
-        'r2':[]       
+        'mae_ref':[],
+        'r2':[],
+        'r2_ref':[]         
                }
   
     # Load the weights

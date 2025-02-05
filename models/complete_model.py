@@ -23,7 +23,10 @@ class complete_model(nn.Module):
     
     self.ensemble = ensemble_model(model_dict, device, mode=mode)
     # Get current timestamp for the save method
-    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M') 
+    self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
+  
+  def get_models(self):
+    return self.ensemble.get_models()
 
   def forward(self, x, y_true):
     h, o = self.extractor(x) # Take the hidden state as features

@@ -21,29 +21,47 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, train):
 
         if train:
             # Put the gradient to zero
-            optimizer.zero_grad()
+            if complete:
+                for optim in optimizer:
+                    optim.zero_grad()
+            else:
+                optimizer.zero_grad()
         
         # Make predictions
         if complete:
             y_true = y_true.detach()
-            y_pred = model(X, y_true)
+            y_pred, y_pred_models = model(X, y_true)
         else:
             y_pred = model(X)
         #print(y_pred)
 
         # Compute the loss
-        
-        loss = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
+        if complete:
+            loss = [loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)) for y_pred in y_pred_models]
+        else:
+            loss = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
 
         if train:
             # Compute the gradient
-            loss.backward()
+            if complete:
+                for l in loss:
+                    l.backward(retain_graph=True)
+            else:
+                loss.backward()
 
             # Update the weights
-            optimizer.step()
+            if complete:
+                for optim in optimizer:
+                    optim.step()
+            else:
+                optimizer.step()
+            
         
         # Accumulate the loss in this epoch
-        loss_epoch += loss.detach().item()
+        if complete:
+            loss_epoch += torch.mean(torch.tensor(loss)).detach().item()
+        else:
+            loss_epoch += loss.detach().item()
 
         # Add predictions and true values to the lists
         y_true_list += y_true[:,1,:].cpu().tolist()

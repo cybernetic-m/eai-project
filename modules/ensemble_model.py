@@ -15,8 +15,8 @@ class ensemble_model(nn.Module):
         super(ensemble_model,self).__init__()
         # model_dict is something like -> {'block_1': {'param_1': [10,20,30,3]}, 'block_2': {'param_1': [10,10], 'param_2': [20, 30]}, ...}
 
-        self.models = nn.ModuleList() # List of models
         self.mode = mode # Modality of voting
+        self.models = nn.ModuleList() # List of models
         self.arima_models = nn.ModuleList()
         self.rnn_models = nn.ModuleList()
         for model_name, model_param_list in model_dict.items():
@@ -55,6 +55,9 @@ class ensemble_model(nn.Module):
         self.gamma = gamma
         
         print("Ensemble Model Summary:", self.models, self.arima_models, self.rnn_models)
+        
+    def get_models(self):
+        return self.models, self.rnn_models, self.arima_models
 
     def voting(self, prediction_list):
         #print(prediction_list)
@@ -112,7 +115,7 @@ class ensemble_model(nn.Module):
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
-        return y#, y_pred
+        return y, y_pred
  
 '''
 if __name__ == '__main__' :

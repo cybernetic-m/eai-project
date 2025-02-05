@@ -56,7 +56,7 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
             # Else (LSTM only) the forward need only the input x
             if complete:
                 y_true = y_true.detach() # 
-                y_pred = model(x, y_true)  # y_pred = []
+                y_pred, y_pred_models = model(x, y_true)  # y_pred = []
                 #print("y_pred:", y_pred.shape)
             else:
                 y_pred = model(x)

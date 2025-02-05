@@ -48,7 +48,7 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
             best_vloss = vloss_avg
             path = model.save()
             
-        scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
+        #scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
         
         print("train: LOSS %.6f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.4f, Y1:%.4f, Z1:%.4f"
               % (loss_avg, train_metrics['mae'][epoch][0], train_metrics['mae'][epoch][1], train_metrics['mae'][epoch][2]

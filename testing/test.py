@@ -15,16 +15,6 @@ from calculate_metrics import calculate_metrics
 
 def test(model, model_path, test_dataloader, loss_fn, complete):
 
-    # Definition of the test metrics dictionary
-    test_metrics = {
-        'rmse':[],
-        'rmse_ref':[],
-        'mae':[],
-        'mae_ref':[],
-        'r2':[],
-        'r2_ref':[]         
-               }
-  
     # Load the weights
     model.load(model_path)
 
@@ -84,6 +74,19 @@ def test(model, model_path, test_dataloader, loss_fn, complete):
     # Average of the training time
     total_inference_time = sum(inference_time_list)
     inference_time_avg = total_inference_time / len(inference_time_list) 
+    
+    # Definition of the test metrics dictionary
+    test_metrics = {
+    'rmse':[],
+    'rmse_ref':[],
+    'mae':[],
+    'mae_ref':[],
+    'r2':[],
+    'r2_ref':[],
+    'loss_avg': loss_avg,
+    'total_inference_time': total_inference_time,
+    'inference_time_avg': inference_time_avg
+    }
     
     # Calculate the metrics
     test_metrics = calculate_metrics(y_true_list, y_pred_list, test_metrics, train=False)

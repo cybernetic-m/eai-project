@@ -22,12 +22,14 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
     train_metrics = {
         'rmse':[], 
         'mae':[],
-        'r2':[]       
+        'r2':[],
+        'loss':[]       
                }
     valid_metrics = {
         'rmse':[], 
         'mae':[],
-        'r2':[]       
+        'r2':[],
+        'loss':[]     
                }
 
     for epoch in range(num_epochs):
@@ -37,12 +39,13 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         loss_avg, y_true_list, y_pred_list = train_one_epoch(model, optimizer, loss_fn, training_dataloader, complete, train=True)
                 
         train_metrics = calculate_metrics(y_true_list, y_pred_list, train_metrics)
-
+        train_metrics['loss'].append(loss_avg)
         # Validation 
         with torch.no_grad():
             vloss_avg, vy_true_list, vy_pred_list = train_one_epoch(model, optimizer, loss_fn, validation_dataloader, complete, train=False)
         
         valid_metrics = calculate_metrics(vy_true_list, vy_pred_list, valid_metrics)
+        valid_metrics['loss'].append(vloss_avg)
 
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg

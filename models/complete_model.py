@@ -11,15 +11,15 @@ from blocks import lstm, rnn
 from ensemble_model import ensemble_model
 
 class complete_model(nn.Module):
-  def __init__(self, hidden_dim, input_dim, model_dict, device, mode='auto-weighted', extractor_type='lstm'):
+  def __init__(self, hidden_dim, input_dim, model_dict, device, num_layers=1, mode='auto-weighted', extractor_type='lstm'):
     super(complete_model, self).__init__()
 
     # Define the feature extractors LSTM and RNN that extract the features 
     # (hidden state) to send to the ensemble model
     if extractor_type == 'lstm':
-      self.extractor = lstm(hidden_dim, input_dim).to(device)
+      self.extractor = lstm(hidden_dim, input_dim, num_layers=num_layers).to(device)
     elif extractor_type == 'rnn':
-      self.extractor = rnn(hidden_dim, input_dim).to(device)
+      self.extractor = rnn(hidden_dim, input_dim, num_layers=num_layers).to(device)
     
     self.ensemble = ensemble_model(model_dict, device, mode=mode)
     # Get current timestamp for the save method

@@ -46,18 +46,22 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         
         valid_metrics = calculate_metrics(vy_true_list, vy_pred_list, valid_metrics)
         valid_metrics['loss'].append(vloss_avg)
-
         if vloss_avg < best_vloss:
             best_vloss = vloss_avg
             path = model.save()
-            
-        #scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
         
-        print("train: LOSS %.6f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.4f, Y1:%.4f, Z1:%.4f"
+        if complete:
+            for schedul in scheduler:
+                schedul.step() # Update the learning rate as lr^gamma (exponential decay)
+            
+        else:
+            scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
+        
+        print("train: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f"
               % (loss_avg, train_metrics['mae'][epoch][0], train_metrics['mae'][epoch][1], train_metrics['mae'][epoch][2]
                  ,train_metrics['r2'][epoch][0],train_metrics['r2'][epoch][1],train_metrics['r2'][epoch][2]
                  ,train_metrics['rmse'][epoch][0],train_metrics['rmse'][epoch][1],train_metrics['rmse'][epoch][2]))
-        print("valid: LOSS %.6f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.4f, Y1:%.4f, Z1:%.4f" 
+        print("valid: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f" 
               % (vloss_avg, valid_metrics['mae'][epoch][0], valid_metrics['mae'][epoch][1], valid_metrics['mae'][epoch][2]
                  ,valid_metrics['r2'][epoch][0],valid_metrics['r2'][epoch][1],valid_metrics['r2'][epoch][2]
                  ,valid_metrics['rmse'][epoch][0],valid_metrics['rmse'][epoch][1],valid_metrics['rmse'][epoch][2]))
@@ -72,3 +76,5 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         json.dump(train_metrics, f)
     with open(path+'/valid_metrics.json', 'w') as f:
         json.dump(valid_metrics, f)
+
+

@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from TimeSeries import ARIMA # type: ignore
 from blocks import *
-
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 
 class ensemble_model(nn.Module):
 
@@ -41,7 +41,7 @@ class ensemble_model(nn.Module):
                     lstm_block = lstm(**model_param).to(device)
                     self.rnn_models.append(lstm_block)
         
-        self.n_models = len(self.models)+1 # Number of models in the ensemble
+        self.n_models = len(self.models)+len(self.arima_models)+len(self.rnn_models) # Number of models in the ensemble
         print(self.n_models)
 
         # Learnable Voting layers
@@ -83,13 +83,14 @@ class ensemble_model(nn.Module):
                 
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
-                loss_n = (y_pred[n] - y_true[:,1,:].unsqueeze(1))**2 # Dimension [8, 1, 3]
+                loss_n = root_mean_squared_error(y_pred[n].detach().cpu().squeeze(1), y_true[:,1,:].detach().cpu()) # Dimension [8, 1, 3]
                 #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
-                loss_n_avg_batch = torch.mean(loss_n, dim=0)
+                #loss_n_avg_batch = torch.mean(loss_n, dim=0)
                 # Do the average among X1, Y1, Z1 losses (they are 3 losses, one for each axis gradients)
-                loss_n_avg_batch_gradients = torch.mean(loss_n_avg_batch, dim=1)
-                model_losses.append(loss_n_avg_batch_gradients) # Append the average loss among the batch
+                #loss_n_avg_batch_gradients = torch.mean(loss_n_avg_batch, dim=1)
+                #model_losses.append(loss_n_avg_batch_gradients) # Append the average loss among the batch
+                model_losses.append(loss_n)
                 #print(model_losses[n].shape)
                 #print(self.weights.shape)
                 weight = 1 / model_losses[n]
@@ -107,7 +108,8 @@ class ensemble_model(nn.Module):
         if self.arima_models:
             y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
         if self.rnn_models:
-            y_pred += [model(x)[1] for model in self.rnn_models]
+            #print(x.shape)
+            y_pred += [model(x)[1][:,-1,:].unsqueeze(1) for model in self.rnn_models]
         #print(y_pred[0].shape)
         #print(y_pred[1].shape)
         #print(y_pred[2].shape)

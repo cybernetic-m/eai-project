@@ -98,7 +98,7 @@ class ensemble_model(nn.Module):
                 #print(self.weights)
                 # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
                 # such that their sum to one (dim=0 because the tensor shape is simply [3])
-                self.weights = torch.softmax(self.weights, dim=0) 
+            self.weights = torch.softmax(self.weights, dim=0) 
 
     def forward(self, x, y_true):
         y_pred = []

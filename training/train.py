@@ -53,6 +53,7 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         if complete:
             for schedul in scheduler:
                 schedul.step() # Update the learning rate as lr^gamma (exponential decay)
+            print(model.ensemble.weights)
             
         else:
             scheduler.step() # Update the learning rate as lr^gamma (exponential decay)

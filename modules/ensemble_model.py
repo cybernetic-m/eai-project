@@ -96,9 +96,9 @@ class ensemble_model(nn.Module):
                 weight = 1 / model_losses[n]
                 self.weights[n] = self.gamma * weight + (1-self.gamma) * self.weights[n]
                 #print(self.weights)
-                # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
-                # such that their sum to one (dim=0 because the tensor shape is simply [3])
-            self.weights = torch.softmax(self.weights, dim=0) 
+            # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
+            # such that their sum to one (dim=0 because the tensor shape is simply [3])
+            self.weights = epsilon_softmax_log(self.weights) 
 
     def forward(self, x, y_true):
         y_pred = []
@@ -118,7 +118,12 @@ class ensemble_model(nn.Module):
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
         return y, y_pred
- 
+    
+def epsilon_softmax_log(x, epsilon=1e-10):
+    max_x = torch.max(x, dim=0, keepdim=True)[0]
+    exp_x = torch.exp(x - max_x)
+    sum_exp_x = torch.sum(exp_x, dim=0, keepdim=True)
+    return torch.max(epsilon * torch.ones_like(x), exp_x / sum_exp_x)
 '''
 if __name__ == '__main__' :
 

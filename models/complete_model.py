@@ -17,7 +17,7 @@ class complete_model(nn.Module):
     # Define the feature extractors LSTM and RNN that extract the features 
     # (hidden state) to send to the ensemble model
     if extractor_type == 'lstm':
-      self.extractor = lstm(hidden_dim, input_dim, num_layers=num_layers).to(device)
+      self.extractor = lstm(feature_dim=hidden_dim, input_dim=input_dim, num_layers=num_layers).to(device)
     elif extractor_type == 'rnn':
       self.extractor = rnn(hidden_dim, input_dim, num_layers=num_layers).to(device)
     
@@ -30,7 +30,7 @@ class complete_model(nn.Module):
 
   def forward(self, x, y_true):
     h, o = self.extractor(x) # Take the hidden state as features
-    h = h.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
+    h = h.permute(0,2,1)
     out = self.ensemble(h, y_true)
     return out
   

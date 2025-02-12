@@ -37,6 +37,29 @@ def normalize_columns(df: pd.DataFrame, columns: list, new_min: float, new_max: 
 
     return df_copy
 
+def normalize_array(arr: np.ndarray, new_min: float, new_max: float) -> np.ndarray:
+    """
+    Normalizes the numpy array between new_min and new_max.
+
+    Parameters:
+    arr (np.ndarray): The input numpy array containing the data.
+    new_min (float): The minimum value of the normalized range.
+    new_max (float): The maximum value of the normalized range.
+
+    Returns:
+    np.ndarray: A new numpy array with the values normalized.
+    """
+    # Calculate the minimum and maximum values of the array
+    min_val = np.min(arr)
+    max_val = np.max(arr)
+
+    # Avoid division by zero if the array has a constant value
+    if max_val != min_val:
+        return new_min + (arr - min_val) * (new_max - new_min) / (max_val - min_val)
+    else:
+        # If the array has constant values, normalize to new_min (or new_max, depends on the case)
+        return np.full_like(arr, new_min)
+
 
 def merge_on_closest_time(df1, df2, time_col='time'):
     # Ensure the 'time' columns are datetime objects

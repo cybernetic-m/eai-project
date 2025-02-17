@@ -40,6 +40,10 @@ class ensemble_model(nn.Module):
                 for model_param in model_param_list:
                     lstm_block = lstm(**model_param).to(device)
                     self.rnn_models.append(lstm_block)
+            elif model_name == 'cnn':
+                for model_param in model_param_list:
+                    lstm_block = cnn(**model_param).to(device)
+                    self.models.append(lstm_block)
         
         self.n_models = len(self.models)+len(self.arima_models)+len(self.rnn_models) # Number of models in the ensemble
         print(self.n_models)

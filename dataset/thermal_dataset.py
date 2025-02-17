@@ -10,7 +10,7 @@ class thermal_dataset(torch.utils.data.Dataset):
     #print(len(data[0])-lookback)
     for i in range(lookback, len(data[0])):
       feature = data[0][i-lookback:i]
-      target = data[1][i:i+2]
+      target = data[1][i-1:i+1]
       #print(target.shape)
       if target.shape != (2,3):
         #print('error')

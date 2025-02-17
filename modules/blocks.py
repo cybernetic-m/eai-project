@@ -16,14 +16,21 @@ class rnn(nn.Module):
 class lstm(nn.Module):
   def __init__(self, feature_dim, input_dim, num_layers=1):
     super(lstm, self).__init__()
-    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True)
+    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim*2, num_layers=num_layers, batch_first=True)
     self.hidden_norm = nn.BatchNorm1d(num_features=feature_dim)
+    if True:
+      #self.test = nn.Linear(feature_dim, feature_dim)
+      self.test = nn.Sequential(nn.Linear(feature_dim*2, feature_dim))#,nn.Tanh(),nn.Linear(feature_dim*2, feature_dim))
+    else:
+      self.test = nn.Identity()
     initialize_weights(self)
+
 
   def forward(self, x):
     output, (hidden_state, cell_state) = self.lstm(x)
-    hidden_state = hidden_state.permute(1, 2, 0) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
-    return hidden_state, output
+    hidden_state = hidden_state.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
+    #print(hidden_state.shape)
+    return self.test(hidden_state), self.test(output)
   
 class mlp(nn.Module):
   # layer_dim_list: it is a list of layer dimension 
@@ -59,20 +66,50 @@ class linear(nn.Module):
     x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
     return x
   
+class cnn(nn.Module):
+  # input_dim: number of input features
+  # hidden_dim_list: list of hidden layer dimensions
+  # output_dim: number of output features
+  # kernel_size_list: list of kernel sizes for each convolutional layer
+  def __init__(self, input_dim, hidden_dim_list, output_dim, kernel_size_list):
+    super(cnn, self).__init__()
+    self.conv_layers = nn.ModuleList([nn.Conv1d(input_dim, hidden_dim_list[0], kernel_size=kernel_size_list[0])] + 
+                                    [nn.Conv1d(hidden_dim_list[i], hidden_dim_list[i+1], kernel_size=kernel_size_list[i+1]) for i in range(len(hidden_dim_list)-1)])
+    self.linear_layers = nn.ModuleList([nn.Linear(hidden_dim_list[-1], output_dim)])
+    initialize_weights(self)
+
+  def forward(self, x):
+    if len(x.shape) == 2:
+      x = x.unsqueeze(1) # Adding a dimension because the input is [8, 20] -> [8, 1, 20]
+    x = x.transpose(1, 2) # Transpose to [8, 20, 1] for Conv1d
+    for layer_i in range(len(self.conv_layers)):
+      x = self.conv_layers[layer_i](x)
+      x = F.tanh(x)
+    x = x.view(x.size(0), -1) # Flatten
+    x = self.linear_layers[0](x)
+    x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
+    #print(x.shape)
+    return x
+
+  
 def initialize_weights(model):
     for m in model.modules():
         if isinstance(m, nn.Linear):
-            init.xavier_uniform_(m.weight)  # Xavier initialization for linear layers
+            init.xavier_normal_(m.weight)  # Xavier initialization for linear layers
             if m.bias is not None:
                 init.zeros_(m.bias)  # Initialize bias with zeros
         elif isinstance(m, nn.RNN) or isinstance(m, nn.LSTM):
             for name, param in m.named_parameters():
                 if "weight_ih" in name:
-                    init.xavier_uniform_(param)  # Xavier for input-hidden weights
+                    init.xavier_normal_(param)  # Xavier for input-hidden weights
                 elif "weight_hh" in name:
                     init.orthogonal_(param)  # Orthogonal for hidden-hidden weights
                 elif "bias" in name:
                     init.zeros_(param)  # Initialize bias with zeros
-        elif isinstance(m, nn.BatchNorm1d):
+        elif isinstance(m, nn.BatchNorm1d) or isinstance(m, nn.BatchNorm2d):
             init.ones_(m.weight)  # Set batch norm weights to 1
             init.zeros_(m.bias)   # Set batch norm bias to 0
+        elif isinstance(m, nn.Conv1d) or isinstance(m, nn.Conv2d):
+            init.kaiming_normal_(m.weight)  # Kaiming initialization for convolutional layers
+            if m.bias is not None:
+                init.zeros_(m.bias)  # Initialize bias with zeros

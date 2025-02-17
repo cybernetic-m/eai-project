@@ -20,7 +20,6 @@ class complete_model(nn.Module):
       self.extractor = lstm(feature_dim=hidden_dim, input_dim=input_dim, num_layers=num_layers).to(device)
     elif extractor_type == 'rnn':
       self.extractor = rnn(hidden_dim, input_dim, num_layers=num_layers).to(device)
-    
     self.ensemble = ensemble_model(model_dict, device, mode=mode)
     # Get current timestamp for the save method
     self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
@@ -29,8 +28,9 @@ class complete_model(nn.Module):
     return self.ensemble.get_models()
 
   def forward(self, x, y_true):
+
     h, o = self.extractor(x) # Take the hidden state as features
-    h = h.permute(0,2,1)
+    #h = h.permute(0,2,1)
     out = self.ensemble(h, y_true)
     return out
   

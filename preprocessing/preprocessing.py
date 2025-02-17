@@ -39,7 +39,7 @@ def normalize_columns(df: pd.DataFrame, columns: list, new_min: float, new_max: 
 
 def normalize_array(arr: np.ndarray, new_min: float, new_max: float) -> np.ndarray:
     """
-    Normalizes the numpy array between new_min and new_max.
+    Normalizes the numpy array between new_min and new_max along each column.
 
     Parameters:
     arr (np.ndarray): The input numpy array containing the data.
@@ -49,16 +49,19 @@ def normalize_array(arr: np.ndarray, new_min: float, new_max: float) -> np.ndarr
     Returns:
     np.ndarray: A new numpy array with the values normalized.
     """
-    # Calculate the minimum and maximum values of the array
-    min_val = np.min(arr)
-    max_val = np.max(arr)
+    # Initialize the normalized array
+    normalized_arr = arr.copy()
 
-    # Avoid division by zero if the array has a constant value
-    if max_val != min_val:
-        return new_min + (arr - min_val) * (new_max - new_min) / (max_val - min_val)
-    else:
-        # If the array has constant values, normalize to new_min (or new_max, depends on the case)
-        return np.full_like(arr, new_min)
+    # Normalize each column separately
+    for i in range(arr.shape[1]):
+        min_val = np.min(arr[:, i])
+        max_val = np.max(arr[:, i])
+        if max_val != min_val:
+            normalized_arr[:, i] = (arr[:, i] - min_val) * (new_max - new_min) / (max_val - min_val) + new_min
+        else:
+            normalized_arr[:, i] = new_min
+
+    return normalized_arr
 
 
 def merge_on_closest_time(df1, df2, time_col='time'):
@@ -83,7 +86,7 @@ def merge_on_closest_time(df1, df2, time_col='time'):
         # Move pointer j to the closest time in df2 (either before or after row1)
         while j < len(df2) - 1 and abs(df2.iloc[j + 1][time_col] - row1[time_col]) < abs(df2.iloc[j][time_col] - row1[time_col]):
             j += 1
-
+        #print(df2.iloc[j + 1][time_col] - row1[time_col])
         # Get the closest row from df2
         closest_row = df2.iloc[j]
 

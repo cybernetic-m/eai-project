@@ -16,21 +16,23 @@ class rnn(nn.Module):
 class lstm(nn.Module):
   def __init__(self, feature_dim, input_dim, num_layers=1):
     super(lstm, self).__init__()
-    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim*2, num_layers=num_layers, batch_first=True)
+    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True)
     self.hidden_norm = nn.BatchNorm1d(num_features=feature_dim)
+    '''
     if True:
       #self.test = nn.Linear(feature_dim, feature_dim)
       self.test = nn.Sequential(nn.Linear(feature_dim*2, feature_dim))#,nn.Tanh(),nn.Linear(feature_dim*2, feature_dim))
     else:
       self.test = nn.Identity()
+    '''
     initialize_weights(self)
-
 
   def forward(self, x):
     output, (hidden_state, cell_state) = self.lstm(x)
     hidden_state = hidden_state.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
     #print(hidden_state.shape)
-    return self.test(hidden_state), self.test(output)
+    #return self.test(hidden_state), self.test(output)
+    return hidden_state, output
   
 class mlp(nn.Module):
   # layer_dim_list: it is a list of layer dimension 
@@ -91,6 +93,60 @@ class cnn(nn.Module):
     #print(x.shape)
     return x
 
+class encoder(nn.Module):
+   # in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the encoder
+   # pooling_kernel_size: is the window size of the pooling layer (ex. 2 means halved the dimension)
+   # padding: you can select the type of padding among "same", "valid", "full"
+   # pooling: you can select the type of pooling among "max" (max pooling), "avg" (average pooling)
+  def __init__(self, in_kern_out, pooling_kernel_size = 2, padding = "same", pooling = "max"):
+    super().__init__()
+
+    self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=in_channels, 
+                                                out_channels=out_channels,
+                                                kernel_size=kernel_size,
+                                                padding = padding
+                                                ) 
+                                                for in_channels, kernel_size, out_channels in in_kern_out])
+    
+    if pooling == 'max':
+        self.pooling_layers = nn.ModuleList([nn.MaxPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
+    if pooling == 'avg':
+        self.pooling_layers = nn.ModuleList([nn.AvgPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
+
+  def forward(self, x):
+    for conv, pooling in zip(self.conv_layers, self.pooling_layers):
+       x = conv(x)
+       x = F.relu(x)
+       x = pooling(x)
+    return x
+  
+class decoder(nn.Module):
+# in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the decoder   
+# scale_factor: it is the factor multiplied to the dimension of input at the upsample layer (for example 2 means double the input dimension)
+#  padding: you can select the type of padding among "same", "valid", "full"
+# upsample_mode: you can select the type of upsampling among "nearest", "linear"
+
+  def __init__(self, in_kern_out, scale_factor = 2, padding = "same", upsample_mode = "linear"):
+    super().__init__()
+
+    self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=in_channels, 
+                                                out_channels=out_channels,
+                                                kernel_size=kernel_size,
+                                                padding = padding
+                                                ) 
+                                                for in_channels, kernel_size, out_channels in in_kern_out])
+    
+    self.upsample_layers = nn.ModuleList([nn.Upsample(scale_factor=scale_factor, mode=upsample_mode) for _ in in_kern_out])
+    
+
+  def forward(self, x):
+    for conv, upsample in zip(self.conv_layers, self.upsample_layers):
+       x = conv(x)
+       x = F.relu(x)
+       x = upsample(x)
+    return x
+
+   
   
 def initialize_weights(model):
     for m in model.modules():

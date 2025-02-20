@@ -67,7 +67,7 @@ class complete_model_autoencoder(nn.Module):
     self.load_state_dict(state_dict)
     print("loaded:", path)
 
-
+'''
 if __name__ == '__main__' :
 
   model_dict = {'mlp': [{'layer_dim_list': [175,40,50,3]}],  
@@ -87,4 +87,5 @@ if __name__ == '__main__' :
   t = torch.rand(8, 4, 200).to(device) 
   y_true = torch.rand(8, 2, 3).to(device)
   out, o = model(t, y_true)
+  '''
  

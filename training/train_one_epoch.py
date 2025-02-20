@@ -7,6 +7,8 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
     # Initialize the lists of predictions and true values
     y_pred_list = []
     y_true_list = []
+    x_pred_list = []
+    x_true_list = []
 
     loss_epoch = 0 # Initialize the loss for the model
     loss_epoch_autoencoder = 0 # Initialize the loss of the autoencoder
@@ -33,7 +35,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         if complete:
             y_true = y_true.detach()
             if autoencoder:
-                y_pred, y_pred_models, x_pred = model(X, y_true) # In this case the model return also the x_pred for the autoencoder update! 
+                (y_pred, y_pred_models), x_pred = model(X, y_true) # In this case the model return also the x_pred for the autoencoder update! 
             else:
                 y_pred, y_pred_models = model(X, y_true)
         else:
@@ -44,6 +46,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         if complete:
             loss = [loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)) for y_pred in y_pred_models]
             if autoencoder:
+                X = X.permute(0,2,1)
                 loss.append(loss_fn(x_pred, X)) # Loss computation of Autoencoder compare X and x_pred because the autoencoder reconstruct the input!
         else:
             loss = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
@@ -68,7 +71,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         if complete:
             if autoencoder:
                 loss_epoch += torch.mean(torch.tensor(loss[:-1])).detach().item()
-                loss_epoch_autoencoder += torch.tensor(loss[-1]).detach().item()
+                loss_epoch_autoencoder += loss[-1].detach().item()
             else:
                 loss_epoch += torch.mean(torch.tensor(loss)).detach().item()
         else:
@@ -89,6 +92,6 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         
     # Compute the average loss
     loss_avg = loss_epoch / len(dataloader)
-    loss_avg_autoencoder = loss_avg_autoencoder / len(dataloader)
+    loss_avg_autoencoder = loss_epoch_autoencoder / len(dataloader)
 
     return loss_avg, loss_avg_autoencoder, y_true_list, y_pred_list, x_true_list, x_pred_list 

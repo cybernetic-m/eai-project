@@ -27,13 +27,13 @@ class autoencoder(nn.Module):
                                )
         
     def forward(self, x):
-        print("x:", x.shape)
+        #print("x:", x.shape)
         z = self.encoder(x) # Latent space 
-        print("z:", z.shape)
+        #print("z:", z.shape)
         merged_z = z.view(z.shape[0], 1,  -1) # Concatenation as [128, 10, 200] -> [128, 1, 200*10]
-        print("merg z:", merged_z.shape)
+        #print("merg z:", merged_z.shape)
         o = self.decoder(z)
-        print("o:", o.shape)
+        #print("o:", o.shape)
 
         return merged_z, o
 

@@ -43,7 +43,7 @@ class complete_model_autoencoder(nn.Module):
     return self.ensemble.get_models()
 
   def forward(self, x, y_true):
-
+    x = x.permute(0,2,1)
     merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
     out = self.ensemble(merged_z, y_true)
 

@@ -10,7 +10,7 @@ sys.path.append(modules_path)
 from autoencoder import autoencoder
 from ensemble_model import ensemble_model
 
-class complete_model(nn.Module):
+class complete_model_autoencoder(nn.Module):
   def __init__(self, 
                model_dict, 
                device, 
@@ -23,7 +23,7 @@ class complete_model(nn.Module):
                mode='auto-weighted'
                ):
     
-    super(complete_model, self).__init__()
+    super(complete_model_autoencoder, self).__init__()
 
     # Define the feature extractor as an autoencoder from which we take
     # the z_merged latent space

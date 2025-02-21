@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 
-def calculate_metrics(y_true_list, y_pred_list, metrics, train=True):
+def calculate_metrics(y_true_list, y_pred_list, metrics, autoencoder = False, train=True):
     y_true_x = [y_true[0] for y_true in y_true_list]
     y_true_y = [y_true[1] for y_true in y_true_list]
     y_true_z = [y_true[2] for y_true in y_true_list]
@@ -29,8 +29,8 @@ def calculate_metrics(y_true_list, y_pred_list, metrics, train=True):
                         r2_score(y_true=y_true_y, y_pred=y_pred_y),
                         r2_score(y_true=y_true_z, y_pred=y_pred_z)
                         ])
-
-    if not train:
+    
+    if not train and not autoencoder:
         metrics['rmse_ref'].append([
                                 root_mean_squared_error(y_true=y_true_x, y_pred=y_pred_ref),
                                 root_mean_squared_error(y_true=y_true_y, y_pred=y_pred_ref),

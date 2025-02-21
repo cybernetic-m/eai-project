@@ -80,7 +80,7 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         if complete:
             for schedul in scheduler:
                 schedul.step() # Update the learning rate as lr^gamma (exponential decay)
-            print("weights of the ensemble models:",model.ensemble.weights.cpu().tolist())
+            print("Weights of the Ensemble models:",model.ensemble.weights.cpu().tolist())
             
         else:
             scheduler.step() # Update the learning rate as lr^gamma (exponential decay)

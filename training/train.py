@@ -14,7 +14,7 @@ from calculate_metrics import calculate_metrics # type: ignore
 import numpy as np
 import torch
 
-def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader, validation_dataloader, hyperparams, model_dict, autoencoder_dict, complete): 
+def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader, validation_dataloader, hyperparams, model_dict, autoencoder_dict, complete, autoencoder_train=False): 
 
     best_vloss = 1000000000
 
@@ -55,7 +55,7 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
                 
         train_model_metrics = calculate_metrics(y_true_list, y_pred_list, train_model_metrics)
         if autoencoder_:
-            train_autoencoder_metrics = calculate_metrics(x_true_list, x_pred_list, train_autoencoder_metrics)
+            train_autoencoder_metrics = calculate_metrics(x_true_list, x_pred_list, train_autoencoder_metrics, autoencoder_)
 
         train_model_metrics['loss'].append(loss_avg)
         if autoencoder_:
@@ -67,20 +67,25 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         
         valid_model_metrics = calculate_metrics(vy_true_list, vy_pred_list, valid_model_metrics)
         if autoencoder_:
-            valid_autoencoder_metrics = calculate_metrics(vx_true_list, vx_pred_list, valid_autoencoder_metrics)
+            valid_autoencoder_metrics = calculate_metrics(vx_true_list, vx_pred_list, valid_autoencoder_metrics, autoencoder_)
 
         valid_model_metrics['loss'].append(vloss_avg)
         if autoencoder_:
             valid_autoencoder_metrics['loss'].append(vloss_avg_autoencoder)
-
-        if vloss_avg < best_vloss:
-            best_vloss = vloss_avg
-            path = model.save()
+        if autoencoder_train:
+            if vloss_avg_autoencoder < best_vloss:
+                best_vloss = vloss_avg_autoencoder
+                path = model.save(autoencoder_)
+        else:                    
+            if vloss_avg < best_vloss:
+                best_vloss = vloss_avg
+                path = model.save()
         
         if complete:
             for schedul in scheduler:
                 schedul.step() # Update the learning rate as lr^gamma (exponential decay)
-            print("Weights of the Ensemble models:",model.ensemble.weights.cpu().tolist())
+            if not 'NoOpModule' in str(type(model.ensemble)):
+                print("Weights of the Ensemble models:",model.ensemble.weights.cpu().tolist())
             
         else:
             scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
@@ -90,19 +95,19 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
                  ,train_model_metrics['r2'][epoch][0],train_model_metrics['r2'][epoch][1],train_model_metrics['r2'][epoch][2]
                  ,train_model_metrics['rmse'][epoch][0],train_model_metrics['rmse'][epoch][1],train_model_metrics['rmse'][epoch][2]))
         if autoencoder_:
-            print("train AUTOENCODER: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f"
-                % (loss_avg_autoencoder, train_autoencoder_metrics['mae'][epoch][0], train_autoencoder_metrics['mae'][epoch][1], train_autoencoder_metrics['mae'][epoch][2]
-                    ,train_autoencoder_metrics['r2'][epoch][0],train_autoencoder_metrics['r2'][epoch][1],train_autoencoder_metrics['r2'][epoch][2]
-                    ,train_autoencoder_metrics['rmse'][epoch][0],train_autoencoder_metrics['rmse'][epoch][1],train_autoencoder_metrics['rmse'][epoch][2]))
+            print("train AUTOENCODER: LOSS %.12f MAE temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f R2 temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f RMSE temp1:%.6f, temp2:%.6f, temp3:%.6f, temp4:%.6f" 
+                % (loss_avg_autoencoder, train_autoencoder_metrics['mae'][epoch][0], train_autoencoder_metrics['mae'][epoch][1], train_autoencoder_metrics['mae'][epoch][2], valid_autoencoder_metrics['mae'][epoch][3]
+                    ,train_autoencoder_metrics['r2'][epoch][0],train_autoencoder_metrics['r2'][epoch][1],train_autoencoder_metrics['r2'][epoch][2],valid_autoencoder_metrics['r2'][epoch][3]
+                    ,train_autoencoder_metrics['rmse'][epoch][0],train_autoencoder_metrics['rmse'][epoch][1],train_autoencoder_metrics['rmse'][epoch][2],valid_autoencoder_metrics['rmse'][epoch][3]))
         print("valid MODEL: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f" 
               % (vloss_avg, valid_model_metrics['mae'][epoch][0], valid_model_metrics['mae'][epoch][1], valid_model_metrics['mae'][epoch][2]
                  ,valid_model_metrics['r2'][epoch][0],valid_model_metrics['r2'][epoch][1],valid_model_metrics['r2'][epoch][2]
                  ,valid_model_metrics['rmse'][epoch][0],valid_model_metrics['rmse'][epoch][1],valid_model_metrics['rmse'][epoch][2]))
         if autoencoder_:
-            print("valid AUTOENCODER: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f" 
-                % (vloss_avg_autoencoder, valid_autoencoder_metrics['mae'][epoch][0], valid_autoencoder_metrics['mae'][epoch][1], valid_autoencoder_metrics['mae'][epoch][2]
-                    ,valid_autoencoder_metrics['r2'][epoch][0],valid_autoencoder_metrics['r2'][epoch][1],valid_autoencoder_metrics['r2'][epoch][2]
-                    ,valid_autoencoder_metrics['rmse'][epoch][0],valid_autoencoder_metrics['rmse'][epoch][1],valid_autoencoder_metrics['rmse'][epoch][2]))
+            print("valid AUTOENCODER: LOSS %.12f MAE temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f R2 temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f RMSE temp1:%.6f, temp2:%.6f, temp3:%.6f, temp4:%.6f" 
+                % (vloss_avg_autoencoder, valid_autoencoder_metrics['mae'][epoch][0], valid_autoencoder_metrics['mae'][epoch][1], valid_autoencoder_metrics['mae'][epoch][2], valid_autoencoder_metrics['mae'][epoch][3]
+                    ,valid_autoencoder_metrics['r2'][epoch][0],valid_autoencoder_metrics['r2'][epoch][1],valid_autoencoder_metrics['r2'][epoch][2],valid_autoencoder_metrics['r2'][epoch][3]
+                    ,valid_autoencoder_metrics['rmse'][epoch][0],valid_autoencoder_metrics['rmse'][epoch][1],valid_autoencoder_metrics['rmse'][epoch][2],valid_autoencoder_metrics['rmse'][epoch][3]))
         
     # Save in JSON files the hyperparameter list, the structure of the ensemble model (if you are using it), the metrics of train and validation
     with open(path+'/hyperparam.json', 'w') as f:

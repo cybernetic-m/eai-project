@@ -98,7 +98,7 @@ class encoder(nn.Module):
    # pooling_kernel_size: is the window size of the pooling layer (ex. 2 means halved the dimension)
    # padding: you can select the type of padding among "same", "valid", "full"
    # pooling: you can select the type of pooling among "max" (max pooling), "avg" (average pooling)
-  def __init__(self, in_kern_out, pooling_kernel_size = 2, padding = "same", pooling = "max"):
+  def __init__(self, in_kern_out, pooling_kernel_size = 2, padding = "same", pooling = "max", dropout=0.0):
     super().__init__()
 
     self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=in_channels, 
@@ -109,15 +109,24 @@ class encoder(nn.Module):
                                                 for in_channels, kernel_size, out_channels in in_kern_out])
     
     if pooling == 'max':
-        self.pooling_layers = nn.ModuleList([nn.MaxPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
+      self.pooling_layers = nn.ModuleList([nn.MaxPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
     if pooling == 'avg':
-        self.pooling_layers = nn.ModuleList([nn.AvgPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
+      self.pooling_layers = nn.ModuleList([nn.AvgPool1d(kernel_size=pooling_kernel_size) for _ in in_kern_out])
+        
+    self.norm_layers = nn.ModuleList([nn.BatchNorm1d(num_features=out_channels) 
+                                                for _, _, out_channels in in_kern_out])
+
+    self.dropout = dropout
+    
+    initialize_weights(self)
 
   def forward(self, x):
-    for conv, pooling in zip(self.conv_layers, self.pooling_layers):
+    for conv, pooling, norm in zip(self.conv_layers, self.pooling_layers, self.norm_layers):
        x = conv(x)
-       x = F.relu(x)
+       x = norm(x)
+       x = F.leaky_relu(x)
        x = pooling(x)
+       x = F.dropout(x, p=self.dropout)
     return x
   
 class decoder(nn.Module):
@@ -137,13 +146,18 @@ class decoder(nn.Module):
                                                 for in_channels, kernel_size, out_channels in in_kern_out])
     
     self.upsample_layers = nn.ModuleList([nn.Upsample(scale_factor=scale_factor, mode=upsample_mode) for _ in in_kern_out])
-    
+    initialize_weights(self)
 
   def forward(self, x):
-    for conv, upsample in zip(self.conv_layers, self.upsample_layers):
-       x = conv(x)
-       x = F.relu(x)
-       x = upsample(x)
+    for i, (conv, upsample) in enumerate(zip(self.conv_layers, self.upsample_layers)):
+      if i != len(self.conv_layers):
+        x = conv(x)
+        x = F.leaky_relu(x)
+        x = upsample(x)
+      else:
+        x = conv(x)
+        #x = F.sigmoid(x)
+        x = upsample(x)
     return x
 
    

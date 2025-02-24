@@ -13,7 +13,7 @@ sys.path.append(utils_path)
 # Import section
 from calculate_metrics import calculate_metrics
 
-def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder):
+def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, autoencoder_only=False):
 
     # Load the weights
     model.load(model_path)
@@ -64,7 +64,8 @@ def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder):
             inference_time_list.append(inference_time) # Append the inference time for each batch in the list
 
             # Compute the loss
-            loss_model += loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)).detach().item()
+            if not autoencoder_only:
+                loss_model += loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)).detach().item()
 
             if autoencoder:
                 x = x.permute(0,2,1)

@@ -44,7 +44,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
 
         # Compute the loss
         if complete:
-            loss = [loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)) for y_pred in y_pred_models]
+            loss = [loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)) for y_pred in y_pred_models if y_pred.shape == y_true[:,1,:].unsqueeze(1).shape]
             if autoencoder:
                 X = X.permute(0,2,1)
                 loss.append(loss_fn(x_pred, X)) # Loss computation of Autoencoder compare X and x_pred because the autoencoder reconstruct the input!
@@ -54,7 +54,9 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         if train:
             # Compute the gradient
             if complete:
+                
                 for l in loss:
+                    l.requires_grad_()
                     l.backward(retain_graph=True)
             else:
                 loss.backward()

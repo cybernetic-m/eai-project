@@ -20,7 +20,8 @@ class complete_model_autoencoder(nn.Module):
                pooling = "max", 
                scale_factor = 2, 
                upsample_mode = "linear", 
-               mode='auto-weighted'
+               mode='auto-weighted',
+               dropout = 0.0
                ):
     
     super(complete_model_autoencoder, self).__init__()
@@ -32,15 +33,21 @@ class complete_model_autoencoder(nn.Module):
                                  padding = padding, 
                                  pooling = pooling, 
                                  scale_factor = scale_factor, 
-                                 upsample_mode = upsample_mode
+                                 upsample_mode = upsample_mode,
+                                 dropout=dropout
                                  ).to(device)
-    
-    self.ensemble = ensemble_model(model_dict, device, mode=mode)
+    if model_dict != {}:
+      self.ensemble = ensemble_model(model_dict, device, mode=mode)
+    else:
+      self.ensemble = NoOpModule()
     # Get current timestamp for the save method
     self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
   
   def get_models(self):
-    return self.ensemble.get_models()
+    if not 'NoOpModule' in str(type(self.ensemble)):
+      return self.ensemble.get_models()
+    else:
+      return [], [], []
 
   def forward(self, x, y_true):
     x = x.permute(0,2,1)
@@ -50,21 +57,29 @@ class complete_model_autoencoder(nn.Module):
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)
     return out, o
   
-  def save(self):
+  def save(self, autoencoder=False):
 
     # Create the directory of results
     dir_path = 'results/training_' + self.current_time # path of type 'results/training_2024-12-22_14
     os.makedirs(dir_path, exist_ok=True) # Create the directory
 
     save_name = 'model.pt' # Model name
+    if autoencoder:
+      save_name = 'autoencoder.pt'
     save_path = os.path.join(dir_path, save_name) # path of type '/training_2024-12-22_14-57/model.pt
-    torch.save(self.state_dict(), save_path) # Save the model
+    if autoencoder:
+      torch.save(self.extractor.state_dict(), save_path) # Save the model
+    else:
+      torch.save(self.state_dict(), save_path) # Save the model
     print(f'Model saved to {save_path}')
     return dir_path
   
-  def load(self, path):
+  def load(self, path, autoencoder=False):
     state_dict = torch.load(path, map_location=torch.device('cpu'))
-    self.load_state_dict(state_dict)
+    if autoencoder:
+      self.extractor.load_state_dict(state_dict)
+    else:  
+      self.load_state_dict(state_dict)
     print("loaded:", path)
 
 '''
@@ -89,3 +104,10 @@ if __name__ == '__main__' :
   out, o = model(t, y_true)
   '''
  
+class NoOpModule(nn.Module):
+    def __init__(self):
+        super(NoOpModule, self).__init__()
+
+    def forward(self, input1, input2):
+        # Do nothing with the inputs
+        return input1, input2

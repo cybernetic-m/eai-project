@@ -1,28 +1,26 @@
 import torch 
 import numpy as np
+from torch.utils.data import Dataset
 
-class thermal_dataset(torch.utils.data.Dataset):
-  def __init__(self, data, lookback, device):
-    super().__init__()
-    X, y = [], []
-    #print(data)
-    #print(lookback)
-    #print(len(data[0])-lookback)
-    for i in range(lookback, len(data[0])):
-      feature = data[0][i-lookback:i]
-      target = data[1][i-1:i+1]
-      #print(target.shape)
-      if target.shape != (2,3):
-        #print('error')
-        continue
-      y.append(target)
-      X.append(feature)
-    self.X = torch.tensor(np.array(X), dtype=torch.float32).to(device)
-    #print('y',y)
-    self.y = torch.tensor(np.array(y), dtype=torch.float32).to(device)
+class thermal_dataset(Dataset):
+    def __init__(self, data, lookback, device):
+        super().__init__()
+        X, y = [], []
+        for i in range(lookback, len(data[0])):
+            feature = data[0][i-lookback:i]
+            target = data[1][i-1:i+1]
+            if target.shape != (2, 3):
+                continue
+            y.append(target)
+            X.append(feature)
+        self.X = np.array(X, dtype=np.float32)
+        self.y = np.array(y, dtype=np.float32)
+        self.device = device
 
-  def __getitem__(self, index):
-    return self.X[index], self.y[index]
+    def __getitem__(self, index):
+        x = torch.tensor(self.X[index], dtype=torch.float32).to(self.device)
+        y = torch.tensor(self.y[index], dtype=torch.float32).to(self.device)
+        return x, y
 
-  def __len__(self):
-    return len(self.X)
+    def __len__(self):
+        return len(self.X)

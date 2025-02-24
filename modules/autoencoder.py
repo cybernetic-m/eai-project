@@ -11,13 +11,14 @@ class autoencoder(nn.Module):
    # pooling_kernel_size: is the window size of the pooling layer (ex. 2 means halved the dimension)
    # pooling: you can select the type of pooling among "max" (max pooling), "avg" (average pooling)
 
-    def __init__(self, in_kern_out, pooling_kernel_size = 2, padding = "same", pooling = "max", scale_factor = 2, upsample_mode = "linear"):
+    def __init__(self, in_kern_out, pooling_kernel_size = 2, padding = "same", pooling = "max", scale_factor = 2, upsample_mode = "linear", dropout = 0.0):
         super(autoencoder, self).__init__()
 
         self.encoder = encoder(in_kern_out=in_kern_out, 
                                pooling_kernel_size=pooling_kernel_size, 
                                padding=padding, 
-                               pooling=pooling
+                               pooling=pooling,
+                               dropout = dropout
                                )
         
         self.decoder = decoder(in_kern_out=[element[::-1] for element in in_kern_out[::-1]], # reverse the list of lists wrt to encoder!
@@ -29,7 +30,7 @@ class autoencoder(nn.Module):
     def forward(self, x):
         #print("x:", x.shape)
         z = self.encoder(x) # Latent space 
-        #print("z:", z.shape)
+        #print("z:", z.shape) 
         merged_z = z.view(z.shape[0], 1,  -1) # Concatenation as [128, 10, 200] -> [128, 1, 200*10]
         #print("merg z:", merged_z.shape)
         o = self.decoder(z)

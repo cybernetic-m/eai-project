@@ -7,35 +7,43 @@ import sys
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
 
-from autoencoder import autoencoder
+from autoencoder import conv_autoencoder, lstm_autoencoder
 from ensemble_model import ensemble_model
 
 class complete_model_autoencoder(nn.Module):
   def __init__(self, 
                model_dict, 
                device, 
-               in_kern_out, 
+               autoencoder_dim, 
                pooling_kernel_size = 2, 
                padding = "same", 
                pooling = "max", 
                scale_factor = 2, 
                upsample_mode = "linear", 
                mode='auto-weighted',
-               dropout = 0.0
+               dropout = 0.0,
+               extractor_type="conv"
                ):
     
     super(complete_model_autoencoder, self).__init__()
 
     # Define the feature extractor as an autoencoder from which we take
     # the z_merged latent space
-    self.extractor = autoencoder(in_kern_out=in_kern_out, 
-                                 pooling_kernel_size = pooling_kernel_size, 
-                                 padding = padding, 
-                                 pooling = pooling, 
-                                 scale_factor = scale_factor, 
-                                 upsample_mode = upsample_mode,
-                                 dropout=dropout
-                                 ).to(device)
+    if extractor_type == 'conv':
+      self.extractor = conv_autoencoder(in_kern_out=autoencoder_dim, 
+                                        pooling_kernel_size = pooling_kernel_size, 
+                                        padding = padding, 
+                                        pooling = pooling, 
+                                        scale_factor = scale_factor, 
+                                        upsample_mode = upsample_mode,
+                                        dropout=dropout
+                                        ).to(device)
+      
+    elif extractor_type == 'lstm':
+      self.extractor = lstm_autoencoder(in_hidd=autoencoder_dim, 
+                                        dropout=dropout
+                                        ).to(device)
+
     if model_dict != {}:
       self.ensemble = ensemble_model(model_dict, device, mode=mode)
     else:

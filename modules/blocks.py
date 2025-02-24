@@ -14,24 +14,16 @@ class rnn(nn.Module):
     return hidden_state, output
    
 class lstm(nn.Module):
-  def __init__(self, feature_dim, input_dim, num_layers=1):
+  def __init__(self, feature_dim, input_dim, num_layers=1, dropout=0.0):
     super(lstm, self).__init__()
-    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True)
-    self.hidden_norm = nn.BatchNorm1d(num_features=feature_dim)
-    '''
-    if True:
-      #self.test = nn.Linear(feature_dim, feature_dim)
-      self.test = nn.Sequential(nn.Linear(feature_dim*2, feature_dim))#,nn.Tanh(),nn.Linear(feature_dim*2, feature_dim))
-    else:
-      self.test = nn.Identity()
-    '''
+    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True, dropout=dropout)
+
     initialize_weights(self)
 
   def forward(self, x):
     output, (hidden_state, cell_state) = self.lstm(x)
     hidden_state = hidden_state.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
-    #print(hidden_state.shape)
-    #return self.test(hidden_state), self.test(output)
+    
     return hidden_state, output
   
 class mlp(nn.Module):
@@ -93,7 +85,7 @@ class cnn(nn.Module):
     #print(x.shape)
     return x
 
-class encoder(nn.Module):
+class conv_encoder(nn.Module):
    # in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the encoder
    # pooling_kernel_size: is the window size of the pooling layer (ex. 2 means halved the dimension)
    # padding: you can select the type of padding among "same", "valid", "full"
@@ -129,10 +121,60 @@ class encoder(nn.Module):
        x = F.dropout(x, p=self.dropout)
     return x
   
-class decoder(nn.Module):
+class lstm_encoder(nn.Module):
+   # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
+   # dropout : you can choose the amount of dropout
+
+  def __init__(self, in_hidd, dropout = 0.0):
+    super().__init__()
+
+    self.lstm_layers = nn.ModuleList([lstm( 
+                                      input_dim = input_dim,
+                                      feature_dim = hidden_dim, 
+                                      num_layers=1,
+                                      dropout=dropout
+                                      ) for input_dim, hidden_dim in in_hidd])
+        
+    #self.norm_layers = nn.ModuleList([nn.BatchNorm1d(num_features=out_channels) 
+    #                                            for _, _, out_channels in in_kern_out])
+    
+    initialize_weights(self)
+
+  def forward(self, x):
+    for lstm in self.lstm_layers:
+       h, x = lstm(x) # Each output (x is "o" of the cell) go into the next lstm, we return the hidden state of the last lstm
+
+    return h
+  
+class lstm_decoder(nn.Module):
+   # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
+   # dropout : you can choose the amount of dropout
+
+  def __init__(self, in_hidd, dropout = 0.0):
+    super().__init__()
+
+    self.lstm_layers = nn.ModuleList([lstm( 
+                                      input_dim = input_dim,
+                                      feature_dim = hidden_dim, 
+                                      num_layers=1,
+                                      dropout=dropout
+                                      ) for input_dim, hidden_dim in in_hidd])
+            
+    #self.norm_layers = nn.ModuleList([nn.BatchNorm1d(num_features=out_channels) 
+    #                                            for _, _, out_channels in in_kern_out])
+    
+    initialize_weights(self)
+
+  def forward(self, x):
+    for lstm in self.lstm_layers:
+       _, x = lstm(x) # Each output (x is "o" of the cell) go into the next lstm, we return the output of the last lstm
+
+    return x
+  
+class conv_decoder(nn.Module):
 # in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the decoder   
 # scale_factor: it is the factor multiplied to the dimension of input at the upsample layer (for example 2 means double the input dimension)
-#  padding: you can select the type of padding among "same", "valid", "full"
+# padding: you can select the type of padding among "same", "valid", "full"
 # upsample_mode: you can select the type of upsampling among "nearest", "linear"
 
   def __init__(self, in_kern_out, scale_factor = 2, padding = "same", upsample_mode = "linear"):

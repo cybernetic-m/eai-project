@@ -59,8 +59,8 @@ class lstm_autoencoder(nn.Module):
     def forward(self, x):
         #print("x:", x.shape)
         o = self.encoder(x) # Latent space 
-        #print("o_enc:", o.shape) 
-        merged_z = o.view(o.shape[0], 1,  -1) # Concatenation as [128, 200, 100] -> [128, 1, 200*10] to create features (latent space)
+        #print("o:", o.shape) 
+        merged_z = o.reshape(o.shape[0], 1,  -1) # Concatenation as [128, 200, 100] -> [128, 1, 200*10] to create features (latent space)
         #print("merg z:", merged_z.shape)
         o = self.decoder(o)
         #print("o:", o.shape)

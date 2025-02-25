@@ -179,7 +179,7 @@ class lstm_decoder(nn.Module):
   def forward(self, x):
     for lstm in self.lstm_layers:
        x = lstm(x)
-    x_flatten = x.view(x.shape[0], 1, -1) # Flatten [256, 4, 200] -> [256, 1, 800]
+    x_flatten = x.reshape(x.shape[0], 1, -1) # Flatten [256, 4, 200] -> [256, 1, 800]
     o = self.linear_decoder(x_flatten)
     o = o.view(o.shape[0], x.shape[2], x.shape[1]) # Reshaping to return to the input dimensions [batch_size, feature_dim, seq_len] ([256, 4, 200])
 

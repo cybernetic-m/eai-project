@@ -44,7 +44,7 @@ class lstm_autoencoder(nn.Module):
    # in_kern_out: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
    # dropout: you can choose the amount of dropout
 
-    def __init__(self, in_hidd, dropout = 0.0):
+    def __init__(self, in_hidd, timesteps, dropout = 0.0):
         super(lstm_autoencoder, self).__init__()
 
         self.encoder = lstm_encoder(in_hidd=in_hidd, 
@@ -52,16 +52,17 @@ class lstm_autoencoder(nn.Module):
                                )
         
         self.decoder = lstm_decoder(in_hidd=[element[::-1] for element in in_hidd[::-1]], # reverse the list of lists wrt to encoder!
+                                    timesteps=timesteps,
                                     dropout=dropout
                                )
         
     def forward(self, x):
         #print("x:", x.shape)
-        z = self.encoder(x) # Latent space 
-        #print("z:", z.shape) 
-        merged_z = z.view(z.shape[0], 1,  -1) # Concatenation as [128, 200, 100] -> [128, 1, 200*10]
+        o = self.encoder(x) # Latent space 
+        #print("o_enc:", o.shape) 
+        merged_z = o.view(o.shape[0], 1,  -1) # Concatenation as [128, 200, 100] -> [128, 1, 200*10] to create features (latent space)
         #print("merg z:", merged_z.shape)
-        o = self.decoder(z)
+        o = self.decoder(o)
         #print("o:", o.shape)
 
         return merged_z, o

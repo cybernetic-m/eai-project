@@ -11,7 +11,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_sco
 
 class ensemble_model(nn.Module):
 
-    def __init__(self, model_dict, device, mode, gamma=0.9):
+    def __init__(self, model_dict, timesteps, device, mode, gamma=0.9):
         super(ensemble_model,self).__init__()
         # model_dict is something like -> {'block_1': {'param_1': [10,20,30,3]}, 'block_2': {'param_1': [10,10], 'param_2': [20, 30]}, ...}
 
@@ -19,6 +19,7 @@ class ensemble_model(nn.Module):
         self.models = nn.ModuleList() # List of models
         self.arima_models = nn.ModuleList()
         self.rnn_models = nn.ModuleList()
+        self.rnn_linear_models = nn.ModuleList()
         for model_name, model_param_list in model_dict.items():
             if model_name == 'ARIMA':
                 for model_param in model_param_list:
@@ -35,11 +36,15 @@ class ensemble_model(nn.Module):
             elif model_name == 'rnn':
                 for model_param in model_param_list:
                     rnn_block = rnn(**model_param).to(device)
+                    rnn_linear_block = linear(in_features=model_param['feature_dim'], out_features=3)   
                     self.rnn_models.append(rnn_block)
+                    self.rnn_linear_models.append(rnn_linear_block)
             elif model_name == 'lstm':
                 for model_param in model_param_list:
                     lstm_block = lstm(**model_param).to(device)
+                    lstm_linear_block = linear(in_features=model_param['feature_dim'], out_features=3)                       
                     self.rnn_models.append(lstm_block)
+                    self.rnn_linear_models.append(lstm_linear_block)
             elif model_name == 'cnn':
                 for model_param in model_param_list:
                     lstm_block = cnn(**model_param).to(device)
@@ -113,7 +118,7 @@ class ensemble_model(nn.Module):
             y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
         if self.rnn_models:
             #print(x.shape)
-            y_pred += [model(x)[1][:,-1,:].unsqueeze(1) for model in self.rnn_models]
+            y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
         #print(y_pred[0].shape)
         #print(y_pred[1].shape)
         #print(y_pred[2].shape)

@@ -6,25 +6,33 @@ class rnn(nn.Module):
   def __init__(self, feature_dim, input_dim, num_layers=1):
     super(rnn, self).__init__()
     self.rnn = nn.RNN(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True)
+    self.input_dim = input_dim
     initialize_weights(self)
 
   def forward(self, x):
+    if x.shape[-1] != self.input_dim:
+      x = x.permute(0,2,1)
+    #print("rnn x:", x.shape)
     output, hidden_state = self.rnn(x)
-    hidden_state = hidden_state.permute(1, 2, 0)
-    return hidden_state, output
+    #print("rnn out:", output.shape)
+    return output
    
 class lstm(nn.Module):
   def __init__(self, feature_dim, input_dim, num_layers=1, dropout=0.0):
     super(lstm, self).__init__()
     self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True, dropout=dropout)
-
+    self.input_dim = input_dim
+    
     initialize_weights(self)
 
   def forward(self, x):
+    #print("HERE:", x.shape)
+    if x.shape[-1] != self.input_dim:
+      x = x.permute(0,2,1)
+    #print("input lstm:", x.shape)
     output, (hidden_state, cell_state) = self.lstm(x)
-    hidden_state = hidden_state.permute(1, 0, 2) # [8, 1, 3] [1, 8, 3] Permute beacause rnn, lstm return hidden state [sequence_length, batch_size, features_dim]
-    
-    return hidden_state, output
+    #print("output_lstm:", output.shape)
+    return output
   
 class mlp(nn.Module):
   # layer_dim_list: it is a list of layer dimension 
@@ -54,9 +62,12 @@ class linear(nn.Module):
     initialize_weights(self)
 
   def forward(self, x):
+    #print("x linear:", len(x))
     if len(x.shape) > 2:
       x = x.reshape(x.shape[0], -1) # Flatten in case in which the tensor in input is [8, 5, 3] -> [8, 20]
+    #print("x linear reshaped:", x.shape)
     x = self.linear_layer(x)
+    #print("x after linear:", x.shape)
     x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
     return x
   
@@ -142,15 +153,14 @@ class lstm_encoder(nn.Module):
 
   def forward(self, x):
     for lstm in self.lstm_layers:
-       h, x = lstm(x) # Each output (x is "o" of the cell) go into the next lstm, we return the hidden state of the last lstm
-
-    return h
+       x = lstm(x) 
+    return x
   
 class lstm_decoder(nn.Module):
    # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
    # dropout : you can choose the amount of dropout
 
-  def __init__(self, in_hidd, dropout = 0.0):
+  def __init__(self, in_hidd, timesteps, dropout = 0.0):
     super().__init__()
 
     self.lstm_layers = nn.ModuleList([lstm( 
@@ -162,14 +172,18 @@ class lstm_decoder(nn.Module):
             
     #self.norm_layers = nn.ModuleList([nn.BatchNorm1d(num_features=out_channels) 
     #                                            for _, _, out_channels in in_kern_out])
+    self.linear_decoder = nn.Linear(in_features=in_hidd[-1][-1]*timesteps, out_features=in_hidd[-1][-1]*timesteps)
     
     initialize_weights(self)
 
   def forward(self, x):
     for lstm in self.lstm_layers:
-       _, x = lstm(x) # Each output (x is "o" of the cell) go into the next lstm, we return the output of the last lstm
+       x = lstm(x)
+    x_flatten = x.view(x.shape[0], 1, -1) # Flatten [256, 4, 200] -> [256, 1, 800]
+    o = self.linear_decoder(x_flatten)
+    o = o.view(o.shape[0], x.shape[2], x.shape[1]) # Reshaping to return to the input dimensions [batch_size, feature_dim, seq_len] ([256, 4, 200])
 
-    return x
+    return o
   
 class conv_decoder(nn.Module):
 # in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the decoder   

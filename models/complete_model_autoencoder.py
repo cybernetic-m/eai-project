@@ -15,6 +15,7 @@ class complete_model_autoencoder(nn.Module):
                model_dict, 
                device, 
                autoencoder_dim, 
+               timesteps,
                pooling_kernel_size = 2, 
                padding = "same", 
                pooling = "max", 
@@ -38,14 +39,17 @@ class complete_model_autoencoder(nn.Module):
                                         upsample_mode = upsample_mode,
                                         dropout=dropout
                                         ).to(device)
+      print("Autoencoder type: Convolutional")
       
     elif extractor_type == 'lstm':
       self.extractor = lstm_autoencoder(in_hidd=autoencoder_dim, 
+                                        timesteps=timesteps,
                                         dropout=dropout
                                         ).to(device)
+      print("Autoencoder type: LSTM")
 
     if model_dict != {}:
-      self.ensemble = ensemble_model(model_dict, device, mode=mode)
+      self.ensemble = ensemble_model(model_dict, timesteps, device, mode=mode)
     else:
       self.ensemble = NoOpModule()
     # Get current timestamp for the save method
@@ -60,6 +64,7 @@ class complete_model_autoencoder(nn.Module):
   def forward(self, x, y_true):
     x = x.permute(0,2,1)
     merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
+    #print("merged_z:", merged_z.shape)
     out = self.ensemble(merged_z, y_true)
 
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)

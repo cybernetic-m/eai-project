@@ -11,7 +11,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_sco
 
 class ensemble_model(nn.Module):
 
-    def __init__(self, model_dict, timesteps, device, mode, gamma=0.9):
+    def __init__(self, model_dict, device, mode, heterogeneous = False, gamma=0.9):
         super(ensemble_model,self).__init__()
         # model_dict is something like -> {'block_1': {'param_1': [10,20,30,3]}, 'block_2': {'param_1': [10,10], 'param_2': [20, 30]}, ...}
 
@@ -52,6 +52,9 @@ class ensemble_model(nn.Module):
         
         self.n_models = len(self.models)+len(self.arima_models)+len(self.rnn_models) # Number of models in the ensemble
         print(self.n_models)
+
+        # Boolean that permits to send to the model an heterogeneous vector of features [temperature_features (extracted from autoencoder), gradient]
+        self.heterogeneous = heterogeneous 
 
         # Learnable Voting layers
         # (3*len(models) because in our problem each model give three predictions gradients (X1, Y1, Z1)
@@ -111,18 +114,24 @@ class ensemble_model(nn.Module):
 
     def forward(self, x, y_true):
         y_pred = []
-        if self.models:
-            y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
-        #print(y_true[:,0,:].shape)
-        if self.arima_models:
-            y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
-        if self.rnn_models:
-            #print(x.shape)
-            y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
-        #print(y_pred[0].shape)
-        #print(y_pred[1].shape)
-        #print(y_pred[2].shape)
-        #print("y_pred:",y_pred)
+        if not self.heterogeneous:
+            if self.models:
+                y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+            #print(y_true[:,0,:].shape)
+            if self.arima_models:
+                y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
+            if self.rnn_models:
+                #print(x.shape)
+                y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
+        else:
+            # Create an new input of the type [temperature_features, gradients]
+            x = torch.concat(x, y_true[:,0,:].unsqueeze(1))
+            if self.models:
+                y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+            if self.arima_models:
+                y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
+            if self.rnn_models:
+                y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]

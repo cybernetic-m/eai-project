@@ -23,7 +23,8 @@ class complete_model_autoencoder(nn.Module):
                upsample_mode = "linear", 
                mode='auto-weighted',
                dropout = 0.0,
-               extractor_type="conv"
+               extractor_type="conv",
+               heterogeneous = False
                ):
     
     super(complete_model_autoencoder, self).__init__()
@@ -49,7 +50,7 @@ class complete_model_autoencoder(nn.Module):
       print("Autoencoder type: LSTM")
 
     if model_dict != {}:
-      self.ensemble = ensemble_model(model_dict, timesteps, device, mode=mode)
+      self.ensemble = ensemble_model(model_dict, device, heterogeneous=heterogeneous, mode=mode)
     else:
       self.ensemble = NoOpModule()
     # Get current timestamp for the save method

@@ -114,24 +114,17 @@ class ensemble_model(nn.Module):
 
     def forward(self, x, y_true):
         y_pred = []
-        if not self.heterogeneous:
-            if self.models:
-                y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
-            #print(y_true[:,0,:].shape)
-            if self.arima_models:
-                y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
-            if self.rnn_models:
-                #print(x.shape)
-                y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
-        else:
-            # Create an new input of the type [temperature_features, gradients]
-            x = torch.concat(x, y_true[:,0,:].unsqueeze(1))
-            if self.models:
-                y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
-            if self.arima_models:
-                y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
-            if self.rnn_models:
-                y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
+        if self.heterogeneous:
+            x = torch.concat((x, y_true[:,0,:].unsqueeze(1)), dim=2)
+            
+        if self.models:
+            y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+        #print(y_true[:,0,:].shape)
+        if self.arima_models:
+            y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
+        if self.rnn_models:
+            #print(x.shape)
+            y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]

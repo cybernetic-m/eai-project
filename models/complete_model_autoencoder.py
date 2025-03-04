@@ -4,6 +4,7 @@ import torch
 import os
 import sys
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import numpy as np
 
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
@@ -17,6 +18,10 @@ class complete_model_autoencoder(nn.Module):
                device, 
                autoencoder_dim, 
                timesteps,
+               mean=torch.tensor([1]),
+               std=torch.tensor([0]),
+               max_val=torch.tensor([1]),
+               min_val=torch.tensor([-1]),
                norm = "Not",
                pooling_kernel_size = 2, 
                padding = "same", 
@@ -57,17 +62,18 @@ class complete_model_autoencoder(nn.Module):
       self.ensemble = NoOpModule()
     # Get current timestamp for the save method
     self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    
+    # All the parameters should be tensors and on the same device of the input
+    self.mean_X = mean[0].view(1,mean[0].shape[0],1) # Mean used for the Standard Scaling approach 
+    self.mean_Y = mean[1].view(1,1,mean[1].shape[0]) # Mean used for the Standard Scaling approach 
+    self.std_X = std[0].view(1,std[0].shape[0],1) # Standard Deviation used for the Standard Scaling approach
+    self.std_Y = std[1].view(1,1,std[1].shape[0]) # Standard Deviation used for the Standard Scaling approach
+    self.max_val_X = max_val[0].view(1,max_val[0].shape[0],1) # Maximum Value used for MinMax Scaling approach
+    self.max_val_Y = max_val[1].view(1,1,max_val[1].shape[0]) # Maximum Value used for MinMax Scaling approach
+    self.min_val_X = min_val[0].view(1,min_val[0].shape[0],1) # Minimum Value used for MinMax Scaling approach
+    self.min_val_Y = min_val[1].view(1,1,min_val[1].shape[0]) # Minimum Value used for MinMax Scaling approach
 
-    # Create the scaler
-    if 'norm' != 'Not':
-        norm_ = True
-        if 'norm' == 'Minmax':
-            self.scaler = MinMaxScaler()
-        elif 'norm' == 'Std':
-            self.scaler = StandardScaler()
-    else:
-        norm_ = False
-        print("Using Raw Data!")
+    self.norm = norm # Normalization type ("Std", "MinMax")
   
   def get_models(self):
     if not 'NoOpModule' in str(type(self.ensemble)):
@@ -79,18 +85,27 @@ class complete_model_autoencoder(nn.Module):
     
     # Input Transform
     x = x.permute(0,2,1)
-    x = self.scaler.fit_trasform(x)
+
+    if self.norm == 'Std':
+         x = (x - self.mean_X) / (self.std_X + 1e-6) # Standard Scaling (1e-6 prevent division by zero)
+         #print(self.mean_Y.shape)
+         #print(y_true[:,0,:].unsqueeze(1).shape)
+         y_true_norm = (y_true[:,0,:].unsqueeze(1) - self.mean_Y) / (self.std_Y + 1e-6)
+    if self.norm == 'MinMax':
+         x = (x-self.min_val_X) / (self.max_val_X - self.min_val_X + 1e-6) # MinMax scaling (1e-6 prevent division by zero)
+         y_true_norm = (y_true[:,0,:].unsqueeze(1)-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
 
     # Extracting Features and sending to the model for output "out"
     merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
     #print("merged_z:", merged_z.shape)
-    out = self.ensemble(merged_z, y_true)
-    
-    # De Transform the output of the extractor "o" and the output of the model "out"
-    o = self.scaler.inverse_transform(o)
-    out = self.scaler.inverse_transform(out)
+    # Denormalization for Autoencoder 
+    if self.norm == 'Std':
+         o = o * self.std_X + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
+    if self.norm == 'MinMax':
+         o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
 
-
+    out = self.ensemble(merged_z, y_true_norm, y_true)
+  
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)
     return out, o
   

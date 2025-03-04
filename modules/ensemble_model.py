@@ -96,6 +96,7 @@ class ensemble_model(nn.Module):
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
                 loss_n = root_mean_squared_error(y_pred[n].detach().cpu().squeeze(1), y_true[:,1,:].detach().cpu()) # Dimension [8, 1, 3]
+                #print(n, ": ", loss_n)
                 #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
                 #loss_n_avg_batch = torch.mean(loss_n, dim=0)
@@ -104,18 +105,19 @@ class ensemble_model(nn.Module):
                 #model_losses.append(loss_n_avg_batch_gradients) # Append the average loss among the batch
                 model_losses.append(loss_n)
                 #print(model_losses[n].shape)
-                #print(self.weights.shape)
-                weight = 1 / model_losses[n]
+                #print(self.weights.shape) 
+                weight = 1 / (model_losses[n] + 1e-6)
                 self.weights[n] = self.gamma * weight + (1-self.gamma) * self.weights[n]
                 #print(self.weights)
             # Do the softmax of the tensor weights ([3]) because we want to normalize all the weights
             # such that their sum to one (dim=0 because the tensor shape is simply [3])
-            self.weights = epsilon_softmax_log(self.weights) 
+            self.weights = F.softmax(self.weights/max(self.weights), dim=0) 
 
-    def forward(self, x, y_true):
+    def forward(self, x, y_true_norm, y_true):
         y_pred = []
         if self.heterogeneous:
-            x = torch.concat((x, y_true[:,0,:].unsqueeze(1)), dim=2)
+            #print(y_true_norm.shape)
+            x = torch.concat((x, y_true_norm), dim=2)
             
         if self.models:
             y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]

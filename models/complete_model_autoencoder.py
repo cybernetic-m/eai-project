@@ -3,6 +3,7 @@ from datetime import datetime
 import torch
 import os
 import sys
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../modules'))
 sys.path.append(modules_path)
@@ -16,6 +17,7 @@ class complete_model_autoencoder(nn.Module):
                device, 
                autoencoder_dim, 
                timesteps,
+               norm = "Not",
                pooling_kernel_size = 2, 
                padding = "same", 
                pooling = "max", 
@@ -55,6 +57,17 @@ class complete_model_autoencoder(nn.Module):
       self.ensemble = NoOpModule()
     # Get current timestamp for the save method
     self.current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
+
+    # Create the scaler
+    if 'norm' != 'Not':
+        norm_ = True
+        if 'norm' == 'Minmax':
+            self.scaler = MinMaxScaler()
+        elif 'norm' == 'Std':
+            self.scaler = StandardScaler()
+    else:
+        norm_ = False
+        print("Using Raw Data!")
   
   def get_models(self):
     if not 'NoOpModule' in str(type(self.ensemble)):
@@ -63,10 +76,20 @@ class complete_model_autoencoder(nn.Module):
       return [], [], []
 
   def forward(self, x, y_true):
+    
+    # Input Transform
     x = x.permute(0,2,1)
+    x = self.scaler.fit_trasform(x)
+
+    # Extracting Features and sending to the model for output "out"
     merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
     #print("merged_z:", merged_z.shape)
     out = self.ensemble(merged_z, y_true)
+    
+    # De Transform the output of the extractor "o" and the output of the model "out"
+    o = self.scaler.inverse_transform(o)
+    out = self.scaler.inverse_transform(out)
+
 
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)
     return out, o

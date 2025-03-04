@@ -33,11 +33,11 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         
         # Make predictions
         if complete:
-            y_true = y_true.detach()
+            y_true_model = y_true.detach()
             if autoencoder:
-                (y_pred, y_pred_models), x_pred = model(X, y_true) # In this case the model return also the x_pred for the autoencoder update! 
+                (y_pred, y_pred_models), x_pred = model(X, y_true_model) # In this case the model return also the x_pred for the autoencoder update! 
             else:
-                y_pred, y_pred_models = model(X, y_true)
+                y_pred, y_pred_models = model(X, y_true_model)
         else:
             y_pred = model(X)
         #print(y_pred)
@@ -56,7 +56,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
             if complete:
                 
                 for l in loss:
-                    l.requires_grad_()
+                    #l.requires_grad_()
                     l.backward(retain_graph=True)
             else:
                 loss.backward()
@@ -72,10 +72,10 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         # Accumulate the loss in this epoch
         if complete:
             if autoencoder:
-                loss_epoch += torch.mean(torch.tensor(loss[:-1])).detach().item()
+                loss_epoch += torch.mean(torch.stack(loss[:-1])).detach().item()
                 loss_epoch_autoencoder += loss[-1].detach().item()
             else:
-                loss_epoch += torch.mean(torch.tensor(loss)).detach().item()
+                loss_epoch += torch.mean(torch.stack(loss)).detach().item()
         else:
             loss_epoch += loss.detach().item()
 

@@ -132,11 +132,6 @@ class ensemble_model(nn.Module):
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
         return y, y_pred
     
-def epsilon_softmax_log(x, epsilon=1e-10):
-    max_x = torch.max(x, dim=0, keepdim=True)[0]
-    exp_x = torch.exp(x - max_x)
-    sum_exp_x = torch.sum(exp_x, dim=0, keepdim=True)
-    return torch.max(epsilon * torch.ones_like(x), exp_x / sum_exp_x)
 '''
 if __name__ == '__main__' :
 

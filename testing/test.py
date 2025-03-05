@@ -13,10 +13,10 @@ sys.path.append(utils_path)
 # Import section
 from calculate_metrics import calculate_metrics
 
-def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, autoencoder_only=False):
+def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, device, autoencoder_only=False):
 
     # Load the weights
-    model.load(model_path)
+    model.load(model_path, device=device)
 
     # Set the model in evaluation mode
     model.eval()

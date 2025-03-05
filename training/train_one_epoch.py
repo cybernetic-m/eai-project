@@ -44,7 +44,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
 
         # Compute the loss
         if complete:
-            loss = [loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)) for y_pred in y_pred_models if y_pred.shape == y_true[:,1,:].unsqueeze(1).shape]
+            loss = [loss_fn(y_pred_, y_true[:,1,:].unsqueeze(1)) for y_pred_ in y_pred_models if y_pred.shape == y_true[:,1,:].unsqueeze(1).shape]
             if autoencoder:
                 X = X.permute(0,2,1)
                 loss.append(loss_fn(x_pred, X)) # Loss computation of Autoencoder compare X and x_pred because the autoencoder reconstruct the input!
@@ -72,7 +72,9 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         # Accumulate the loss in this epoch
         if complete:
             if autoencoder:
-                loss_epoch += torch.mean(torch.stack(loss[:-1])).detach().item()
+                #print("Loss Models:", torch.stack(loss[:-1]).detach().cpu().numpy())
+                #loss_epoch += torch.mean(torch.stack(loss[:-1])).detach().item()
+                loss_epoch += loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)).detach().item() # Loss of the prediction of the ensemble model entire
                 loss_epoch_autoencoder += loss[-1].detach().item()
             else:
                 loss_epoch += torch.mean(torch.stack(loss)).detach().item()
@@ -94,6 +96,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         
     # Compute the average loss
     loss_avg = loss_epoch / len(dataloader)
+    #print("Average of the epoch:", loss_avg)
     loss_avg_autoencoder = loss_epoch_autoencoder / len(dataloader)
 
     return loss_avg, loss_avg_autoencoder, y_true_list, y_pred_list, x_true_list, x_pred_list 

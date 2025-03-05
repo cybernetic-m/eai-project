@@ -56,11 +56,6 @@ class ensemble_model(nn.Module):
         # Boolean that permits to send to the model an heterogeneous vector of features [temperature_features (extracted from autoencoder), gradient]
         self.heterogeneous = heterogeneous 
 
-        # Learnable Voting layers
-        # (3*len(models) because in our problem each model give three predictions gradients (X1, Y1, Z1)
-        self.voting_mlp = mlp([3*self.n_models, 4*self.n_models, 3]) # MLP layer 
-        self.voting_linear = nn.Linear(in_features=3*self.n_models, out_features=3) # Linear layer 
-
         # Weights initialization for auto weighted average system
         self.weights = torch.ones(self.n_models).to(device) / self.n_models # In this way we have a tensor of uniform weighting [1/3, 1/3, 1/3] for example
 
@@ -73,19 +68,23 @@ class ensemble_model(nn.Module):
 
     def voting(self, prediction_list):
         #print(prediction_list)
+        #print("Mode:", self.mode)
+
+        #print("Predictions model 0:", prediction_list[0][0].detach().cpu().numpy())
+        #print("Predictions model 1:", prediction_list[1][0].detach().cpu().numpy())
+        #print("Predictions model 2:", prediction_list[2][0].detach().cpu().numpy())
         prediction_tensor = torch.stack(prediction_list) # Transform a list of tensor in a tensor [torch.tensor[8,1,3], torch.tensor[8,1,3], torch.tensor[8,1,3]] -> torch.tensor[3, 8, 1, 3]
         #print(prediction_tensor.shape)
         if self.mode == 'average':
-            y = torch.mean(prediction_tensor, dim=0) # Do the average on dim=0 because it's the model dimension [3, 8 , 1, 3] where the 3 is the number of models
-        if self.mode == 'mlp':
-            prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
-            y = self.voting_mlp(prediction_tensor)
-        if self.mode == 'linear':
-            prediction_tensor = prediction_tensor.view(prediction_tensor.shape[1], prediction_tensor.shape[2], -1) # Transform torch.tensor[3, 8, 1, 3] -> [8, 1, 9]
-            y = self.voting_linear(prediction_tensor)
+            y = torch.mean(prediction_tensor, dim=0)  # Do the average on dim=0 because it's the model dimension [3, 8 , 1, 3] where the 3 is the number of models
+            #print("Average y:", y[0].detach().cpu().numpy())
+        if self.mode == 'median':
+            y = torch.median(prediction_tensor, dim=0).values  # Do the average on dim=0 because it's the model dimension [3, 8 , 1, 3] where the 3 is the number of models
+            #print("Median y:", y[0].detach().cpu().numpy())
         if self.mode == 'auto-weighted':
-            weights = self.weights.view(self.n_models,1,1,1) # Broadcasting of weights adding 3 dimension for multiplication to [3, 8, 1, 3]
+            weights = self.weights.reshape(self.n_models,1,1,1) # Broadcasting of weights adding 3 dimension for multiplication to [3, 8, 1, 3]
             y = (weights*prediction_tensor).sum(dim=0) # Do the weighted average (summing in dim=0 -> number of models)
+            #print("AW y:", y[0].detach().cpu().numpy())
         return y
     
     def update_weights(self, y_pred, y_true):

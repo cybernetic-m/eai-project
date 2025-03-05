@@ -70,31 +70,51 @@ class linear(nn.Module):
     #print("x after linear:", x.shape)
     x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
     return x
-  
-class cnn(nn.Module):
-  # input_dim: number of input features
-  # hidden_dim_list: list of hidden layer dimensions
-  # output_dim: number of output features
-  # kernel_size_list: list of kernel sizes for each convolutional layer
-  def __init__(self, input_dim, hidden_dim_list, output_dim, kernel_size_list):
-    super(cnn, self).__init__()
-    self.conv_layers = nn.ModuleList([nn.Conv1d(input_dim, hidden_dim_list[0], kernel_size=kernel_size_list[0])] + 
-                                    [nn.Conv1d(hidden_dim_list[i], hidden_dim_list[i+1], kernel_size=kernel_size_list[i+1]) for i in range(len(hidden_dim_list)-1)])
-    self.linear_layers = nn.ModuleList([nn.Linear(hidden_dim_list[-1], output_dim)])
+
+class rnn_regressor(nn.Module):
+  def __init__(self, feature_dim, input_dim, out_features, bias=False, num_layers=1):
+    super(rnn_regressor, self).__init__()
+    self.rnn = nn.RNN(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True)
+    self.linear = nn.Linear(in_features=feature_dim, out_features=out_features, bias=bias)
+    self.input_dim = input_dim
     initialize_weights(self)
 
   def forward(self, x):
-    if len(x.shape) == 2:
-      x = x.unsqueeze(1) # Adding a dimension because the input is [8, 20] -> [8, 1, 20]
-    x = x.transpose(1, 2) # Transpose to [8, 20, 1] for Conv1d
-    for layer_i in range(len(self.conv_layers)):
-      x = self.conv_layers[layer_i](x)
-      x = F.tanh(x)
-    x = x.view(x.size(0), -1) # Flatten
-    x = self.linear_layers[0](x)
-    x = x.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
-    #print(x.shape)
-    return x
+    if x.shape[-1] != self.input_dim:
+      x = x.permute(0,2,1)
+    #print("input lstm:", x.shape)
+    rnn_out, hidden_state = self.rnn(x)
+    if len(rnn_out.shape) > 2:
+      rnn_out = rnn_out.reshape(rnn_out.shape[0], -1) # Flatten in case in which the tensor in input is [8, 5, 3] -> [8, 20]
+    #print("x linear reshaped:", x.shape)
+    out = self.linear(rnn_out)
+    #print("x after linear:", x.shape)
+    out = out.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
+    #print("output_lstm:", output.shape)
+    return out
+  
+class lstm_regressor(nn.Module):
+  def __init__(self, feature_dim, input_dim, out_features, num_layers=1, dropout=0.0, bias=False):
+    super(lstm_regressor, self).__init__()
+    self.lstm = nn.LSTM(input_size=input_dim, hidden_size=feature_dim, num_layers=num_layers, batch_first=True, dropout=dropout)
+    self.linear = nn.Linear(in_features=feature_dim, out_features=out_features, bias=bias)
+    self.input_dim = input_dim
+    
+    initialize_weights(self)
+
+  def forward(self, x):
+    if x.shape[-1] != self.input_dim:
+      x = x.permute(0,2,1)
+    #print("input lstm:", x.shape)
+    lstm_out, (hidden_state, cell_state) = self.lstm(x)
+    if len(lstm_out.shape) > 2:
+      lstm_out = lstm_out.reshape(lstm_out.shape[0], -1) # Flatten in case in which the tensor in input is [8, 5, 3] -> [8, 20]
+    #print("x linear reshaped:", x.shape)
+    out = self.linear(lstm_out)
+    #print("x after linear:", x.shape)
+    out = out.unsqueeze(1) # Adding a dimension because of the previous flattening [8, 3] -> [8,1,3]
+    #print("output_lstm:", output.shape)
+    return out
 
 class conv_encoder(nn.Module):
    # in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the encoder
@@ -217,7 +237,6 @@ class conv_decoder(nn.Module):
     return x
 
    
-  
 def initialize_weights(model):
     for m in model.modules():
         if isinstance(m, nn.Linear):

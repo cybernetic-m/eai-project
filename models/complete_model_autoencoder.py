@@ -56,6 +56,9 @@ class complete_model_autoencoder(nn.Module):
                                         ).to(device)
       print("Autoencoder type: LSTM")
 
+    print("Autoencoder Summary:", self.extractor)
+
+
     if model_dict != {}:
       self.ensemble = ensemble_model(model_dict, device, heterogeneous=heterogeneous, mode=mode)
     else:

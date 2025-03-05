@@ -19,7 +19,6 @@ class ensemble_model(nn.Module):
         self.models = nn.ModuleList() # List of models
         self.arima_models = nn.ModuleList()
         self.rnn_models = nn.ModuleList()
-        self.rnn_linear_models = nn.ModuleList()
         for model_name, model_param_list in model_dict.items():
             if model_name == 'ARIMA':
                 for model_param in model_param_list:
@@ -35,23 +34,14 @@ class ensemble_model(nn.Module):
                     self.models.append(mlp_block)
             elif model_name == 'rnn':
                 for model_param in model_param_list:
-                    rnn_block = rnn(**model_param).to(device)
-                    rnn_linear_block = linear(in_features=model_param['feature_dim'], out_features=3)   
+                    rnn_block = rnn_regressor(**model_param).to(device)
                     self.rnn_models.append(rnn_block)
-                    self.rnn_linear_models.append(rnn_linear_block)
             elif model_name == 'lstm':
                 for model_param in model_param_list:
-                    lstm_block = lstm(**model_param).to(device)
-                    lstm_linear_block = linear(in_features=model_param['feature_dim'], out_features=3)                       
+                    lstm_block = lstm_regressor(**model_param).to(device)
                     self.rnn_models.append(lstm_block)
-                    self.rnn_linear_models.append(lstm_linear_block)
-            elif model_name == 'cnn':
-                for model_param in model_param_list:
-                    lstm_block = cnn(**model_param).to(device)
-                    self.models.append(lstm_block)
         
         self.n_models = len(self.models)+len(self.arima_models)+len(self.rnn_models) # Number of models in the ensemble
-        print(self.n_models)
 
         # Boolean that permits to send to the model an heterogeneous vector of features [temperature_features (extracted from autoencoder), gradient]
         self.heterogeneous = heterogeneous 
@@ -62,6 +52,7 @@ class ensemble_model(nn.Module):
         self.gamma = gamma
         
         print("Ensemble Model Summary:", self.models, self.arima_models, self.rnn_models)
+        print("Mode of voting", self.mode)
         
     def get_models(self):
         return self.models, self.rnn_models, self.arima_models
@@ -125,7 +116,7 @@ class ensemble_model(nn.Module):
             y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
         if self.rnn_models:
             #print(x.shape)
-            y_pred += [linear(model(x)) for model, linear in zip(self.rnn_models, self.rnn_linear_models)]
+            y_pred += [model(x) for model in self.rnn_models]
         if self.mode == 'auto-weighted':
             self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
         y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]

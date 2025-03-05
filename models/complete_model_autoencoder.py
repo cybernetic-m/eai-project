@@ -90,7 +90,7 @@ class complete_model_autoencoder(nn.Module):
     x = x.permute(0,2,1)
 
     if self.norm == 'Std':
-      print(x.device, self.mean_X.device, self.mean_X)
+      #print(x.device, self.mean_X.device, self.mean_X)
       
       x = (x - self.mean_X) / (self.std_X + 1e-6) # Standard Scaling (1e-6 prevent division by zero)
       #print(self.mean_Y.shape)

@@ -18,10 +18,10 @@ class complete_model_autoencoder(nn.Module):
                device, 
                autoencoder_dim, 
                timesteps,
-               mean=(torch.tensor([1,1,1,1]),torch.tensor([1,1,1])),
-               std=(torch.tensor([0,0,0,0]),torch.tensor([0,0,0])),
-               max_val=(torch.tensor([1]),torch.tensor([1])),
-               min_val=(torch.tensor([-1]),torch.tensor([-1])),
+               mean=(torch.tensor([1.0,1.0,1.0,1.0]),torch.tensor([1.0,1.0,1.0])),
+               std=(torch.tensor([0.0,0.0,0.0,0.0]),torch.tensor([0.0,0.0,0.0])),
+               max_val=(torch.tensor([1.0,1.0,1.0,1.0]),torch.tensor([1.0,1.0,1.0])),
+               min_val=(torch.tensor([-1.0,-1.0,-1.0,-1.0]),torch.tensor([-1.0,-1.0,-1.0])),
                lstm_layers = 1,
                norm = "Not",
                pooling_kernel_size = 2, 
@@ -54,7 +54,7 @@ class complete_model_autoencoder(nn.Module):
       self.extractor = lstm_autoencoder(in_hidd=autoencoder_dim, 
                                         timesteps=timesteps,
                                         dropout=dropout,
-                                        num_layers = 1
+                                        num_layers = lstm_layers
                                         ).to(device)
       print("Autoencoder type: LSTM")
 
@@ -93,7 +93,7 @@ class complete_model_autoencoder(nn.Module):
 
     if self.norm == 'Std':
       #print(x.device, self.mean_X.device, self.mean_X)
-      print(self.std_X, self.std_Y)
+      #print(self.std_X, self.std_Y)
       
       x = (x - self.mean_X) / (self.std_X + 1e-10) # Standard Scaling (1e-6 prevent division by zero)
       #print(self.mean_Y.shape)

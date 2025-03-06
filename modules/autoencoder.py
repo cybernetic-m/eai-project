@@ -44,16 +44,18 @@ class lstm_autoencoder(nn.Module):
    # in_kern_out: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
    # dropout: you can choose the amount of dropout
 
-    def __init__(self, in_hidd, timesteps, dropout = 0.0):
+    def __init__(self, in_hidd, timesteps, num_layers, dropout = 0.0):
         super(lstm_autoencoder, self).__init__()
 
         self.encoder = lstm_encoder(in_hidd=in_hidd, 
-                                    dropout = dropout
+                                    dropout = dropout,
+                                    num_layers=num_layers
                                )
         
         self.decoder = lstm_decoder(in_hidd=[element[::-1] for element in in_hidd[::-1]], # reverse the list of lists wrt to encoder!
                                     timesteps=timesteps,
-                                    dropout=dropout
+                                    dropout=dropout,
+                                    num_layers=num_layers
                                )
         
     def forward(self, x):

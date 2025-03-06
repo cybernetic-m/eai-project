@@ -56,7 +56,6 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
             if complete:
                 
                 for l in loss:
-                    #l.requires_grad_()
                     l.backward(retain_graph=True)
             else:
                 loss.backward()

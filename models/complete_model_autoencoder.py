@@ -22,6 +22,7 @@ class complete_model_autoencoder(nn.Module):
                std=(torch.tensor([0,0,0,0]),torch.tensor([0,0,0])),
                max_val=(torch.tensor([1]),torch.tensor([1])),
                min_val=(torch.tensor([-1]),torch.tensor([-1])),
+               lstm_layers = 1,
                norm = "Not",
                pooling_kernel_size = 2, 
                padding = "same", 
@@ -52,7 +53,8 @@ class complete_model_autoencoder(nn.Module):
     elif extractor_type == 'lstm':
       self.extractor = lstm_autoencoder(in_hidd=autoencoder_dim, 
                                         timesteps=timesteps,
-                                        dropout=dropout
+                                        dropout=dropout,
+                                        num_layers = 1
                                         ).to(device)
       print("Autoencoder type: LSTM")
 
@@ -92,10 +94,10 @@ class complete_model_autoencoder(nn.Module):
     if self.norm == 'Std':
       #print(x.device, self.mean_X.device, self.mean_X)
       
-      x = (x - self.mean_X) / (self.std_X + 1e-6) # Standard Scaling (1e-6 prevent division by zero)
+      x = (x - self.mean_X) / (self.std_X + 1e-10) # Standard Scaling (1e-6 prevent division by zero)
       #print(self.mean_Y.shape)
       #print(y_true[:,0,:].unsqueeze(1).shape)
-      y_true_norm = (y_true[:,0,:].unsqueeze(1) - self.mean_Y) / (self.std_Y + 1e-6)
+      y_true_norm = (y_true[:,0,:].unsqueeze(1) - self.mean_Y) / (self.std_Y + 1e-10)
     if self.norm == 'MinMax':
       x = (x-self.min_val_X) / (self.max_val_X - self.min_val_X + 1e-6) # MinMax scaling (1e-6 prevent division by zero)
       y_true_norm = (y_true[:,0,:].unsqueeze(1)-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
@@ -105,7 +107,7 @@ class complete_model_autoencoder(nn.Module):
     #print("merged_z:", merged_z.shape)
     # Denormalization for Autoencoder 
     if self.norm == 'Std':
-      o = o * self.std_X + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
+      o = o * (self.std_X + 1e-10) + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
     if self.norm == 'MinMax':
       o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
 
@@ -165,6 +167,6 @@ class NoOpModule(nn.Module):
     def __init__(self):
         super(NoOpModule, self).__init__()
 
-    def forward(self, input1, input2):
+    def forward(self, input1, input2, input3):
         # Do nothing with the inputs
-        return input1, input2
+        return torch.rand(input1.shape[0], 1, 3, device='cuda'), []

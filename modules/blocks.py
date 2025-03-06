@@ -156,13 +156,13 @@ class lstm_encoder(nn.Module):
    # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
    # dropout : you can choose the amount of dropout
 
-  def __init__(self, in_hidd, dropout = 0.0):
+  def __init__(self, in_hidd, num_layers, dropout = 0.0):
     super().__init__()
 
     self.lstm_layers = nn.ModuleList([lstm( 
                                       input_dim = input_dim,
                                       feature_dim = hidden_dim, 
-                                      num_layers=1,
+                                      num_layers=num_layers,
                                       dropout=dropout
                                       ) for input_dim, hidden_dim in in_hidd])
         
@@ -180,13 +180,13 @@ class lstm_decoder(nn.Module):
    # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
    # dropout : you can choose the amount of dropout
 
-  def __init__(self, in_hidd, timesteps, dropout = 0.0):
+  def __init__(self, in_hidd, timesteps, num_layers, dropout = 0.0):
     super().__init__()
 
     self.lstm_layers = nn.ModuleList([lstm( 
                                       input_dim = input_dim,
                                       feature_dim = hidden_dim, 
-                                      num_layers=1,
+                                      num_layers=num_layers,
                                       dropout=dropout
                                       ) for input_dim, hidden_dim in in_hidd])
             

@@ -89,20 +89,21 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
             
         else:
             scheduler.step() # Update the learning rate as lr^gamma (exponential decay)
-        
-        print("train MODEL: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f"
-              % (loss_avg, train_model_metrics['mae'][epoch][0], train_model_metrics['mae'][epoch][1], train_model_metrics['mae'][epoch][2]
-                 ,train_model_metrics['r2'][epoch][0],train_model_metrics['r2'][epoch][1],train_model_metrics['r2'][epoch][2]
-                 ,train_model_metrics['rmse'][epoch][0],train_model_metrics['rmse'][epoch][1],train_model_metrics['rmse'][epoch][2]))
+        if model_dict:
+            print("train MODEL: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f"
+                % (loss_avg, train_model_metrics['mae'][epoch][0], train_model_metrics['mae'][epoch][1], train_model_metrics['mae'][epoch][2]
+                    ,train_model_metrics['r2'][epoch][0],train_model_metrics['r2'][epoch][1],train_model_metrics['r2'][epoch][2]
+                    ,train_model_metrics['rmse'][epoch][0],train_model_metrics['rmse'][epoch][1],train_model_metrics['rmse'][epoch][2]))
         if autoencoder_:
             print("train AUTOENCODER: LOSS %.12f MAE temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f R2 temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f RMSE temp1:%.6f, temp2:%.6f, temp3:%.6f, temp4:%.6f" 
                 % (loss_avg_autoencoder, train_autoencoder_metrics['mae'][epoch][0], train_autoencoder_metrics['mae'][epoch][1], train_autoencoder_metrics['mae'][epoch][2], valid_autoencoder_metrics['mae'][epoch][3]
                     ,train_autoencoder_metrics['r2'][epoch][0],train_autoencoder_metrics['r2'][epoch][1],train_autoencoder_metrics['r2'][epoch][2],valid_autoencoder_metrics['r2'][epoch][3]
                     ,train_autoencoder_metrics['rmse'][epoch][0],train_autoencoder_metrics['rmse'][epoch][1],train_autoencoder_metrics['rmse'][epoch][2],valid_autoencoder_metrics['rmse'][epoch][3]))
-        print("valid MODEL: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f" 
-              % (vloss_avg, valid_model_metrics['mae'][epoch][0], valid_model_metrics['mae'][epoch][1], valid_model_metrics['mae'][epoch][2]
-                 ,valid_model_metrics['r2'][epoch][0],valid_model_metrics['r2'][epoch][1],valid_model_metrics['r2'][epoch][2]
-                 ,valid_model_metrics['rmse'][epoch][0],valid_model_metrics['rmse'][epoch][1],valid_model_metrics['rmse'][epoch][2]))
+        if model_dict:
+            print("valid MODEL: LOSS %.12f MAE X1:%.4f, Y1:%.4f, Z1:%.4f R2 X1:%.4f, Y1:%.4f, Z1:%.4f RMSE X1:%.6f, Y1:%.6f, Z1:%.6f" 
+                % (vloss_avg, valid_model_metrics['mae'][epoch][0], valid_model_metrics['mae'][epoch][1], valid_model_metrics['mae'][epoch][2]
+                    ,valid_model_metrics['r2'][epoch][0],valid_model_metrics['r2'][epoch][1],valid_model_metrics['r2'][epoch][2]
+                    ,valid_model_metrics['rmse'][epoch][0],valid_model_metrics['rmse'][epoch][1],valid_model_metrics['rmse'][epoch][2]))
         if autoencoder_:
             print("valid AUTOENCODER: LOSS %.12f MAE temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f R2 temp1:%.4f, temp2:%.4f, temp3:%.4f, temp4:%.4f RMSE temp1:%.6f, temp2:%.6f, temp3:%.6f, temp4:%.6f" 
                 % (vloss_avg_autoencoder, valid_autoencoder_metrics['mae'][epoch][0], valid_autoencoder_metrics['mae'][epoch][1], valid_autoencoder_metrics['mae'][epoch][2], valid_autoencoder_metrics['mae'][epoch][3]

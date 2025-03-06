@@ -170,4 +170,4 @@ class NoOpModule(nn.Module):
 
     def forward(self, input1, input2, input3):
         # Do nothing with the inputs
-        return torch.rand(input1.shape[0], 1, 3, device='cuda'), []
+        return torch.rand(input1.shape[0], 1, 3, device=input1.device), []

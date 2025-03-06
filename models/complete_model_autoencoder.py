@@ -93,12 +93,13 @@ class complete_model_autoencoder(nn.Module):
 
     if self.norm == 'Std':
       #print(x.device, self.mean_X.device, self.mean_X)
+      print(self.std_X, self.std_Y)
       
       x = (x - self.mean_X) / (self.std_X + 1e-10) # Standard Scaling (1e-6 prevent division by zero)
       #print(self.mean_Y.shape)
       #print(y_true[:,0,:].unsqueeze(1).shape)
       y_true_norm = (y_true[:,0,:].unsqueeze(1) - self.mean_Y) / (self.std_Y + 1e-10)
-    if self.norm == 'MinMax':
+    if self.norm == 'Minmax':
       x = (x-self.min_val_X) / (self.max_val_X - self.min_val_X + 1e-6) # MinMax scaling (1e-6 prevent division by zero)
       y_true_norm = (y_true[:,0,:].unsqueeze(1)-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
 
@@ -108,7 +109,7 @@ class complete_model_autoencoder(nn.Module):
     # Denormalization for Autoencoder 
     if self.norm == 'Std':
       o = o * (self.std_X + 1e-10) + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
-    if self.norm == 'MinMax':
+    if self.norm == 'Minmax':
       o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
 
     out = self.ensemble(merged_z, y_true_norm, y_true)

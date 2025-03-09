@@ -67,6 +67,8 @@ class complete_model(nn.Module):
                             ).to(device)
       print("Extractor type: LSTM Encoder")
 
+    self.extractor_type = extractor_type
+    
     print("Autoencoder Summary:", self.extractor)
 
 
@@ -113,18 +115,25 @@ class complete_model(nn.Module):
       y_true_norm = (y_true[:,0,:].unsqueeze(1)-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
 
     # Extracting Features and sending to the model for output "out"
-    merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
+    if self.extractor_type == 'lstm_encoder':
+      merged_z = self.extractor(x)
+    else:
+      merged_z, o = self.extractor(x) # merged_z is the latent space vector to send to the forecaster (ensemble model)
     #print("merged_z:", merged_z.shape)
-    # Denormalization for Autoencoder 
-    if self.norm == 'Std':
-      o = o * (self.std_X + 1e-10) + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
-    if self.norm == 'Minmax':
-      o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
+    # Denormalization for Autoencoder
+    if not self.extractor_type == 'lstm_encoder':
+      if self.norm == 'Std':
+        o = o * (self.std_X + 1e-10) + self.mean_X # Standard Scaling (1e-6 prevent division by zero)
+      if self.norm == 'Minmax':
+        o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
 
     out = self.ensemble(merged_z, y_true_norm, y_true)
   
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)
-    return out, o
+    if self.extractor_type == 'lstm_encoder':
+      return out
+    else:
+      return out, o
   
   def save(self, autoencoder=False):
 

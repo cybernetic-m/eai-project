@@ -107,6 +107,9 @@ class ensemble_model(nn.Module):
         y_pred = []
         if self.heterogeneous:
             #print(y_true_norm.shape)
+            #print(x.shape)
+            if x.shape[1] != 1:
+                x = x.reshape(x.shape[0], 1, -1)
             x = torch.concat((x, y_true_norm), dim=2)
             
         if self.models:

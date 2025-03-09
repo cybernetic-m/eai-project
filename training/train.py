@@ -14,7 +14,7 @@ from calculate_metrics import calculate_metrics # type: ignore
 import numpy as np
 import torch
 
-def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader, validation_dataloader, hyperparams, model_dict, autoencoder_dict, complete, autoencoder_train=False): 
+def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader, validation_dataloader, hyperparams, model_dict, autoencoder, autoencoder_dict, complete, autoencoder_train=False): 
 
     best_vloss = 1000000000
 
@@ -44,8 +44,8 @@ def train(num_epochs, loss_fn, model, optimizer, scheduler, training_dataloader,
         'loss':[]       
                }
     
-    if autoencoder_dict != None:
-        autoencoder_ = True
+    
+    autoencoder_ = autoencoder
 
     for epoch in range(num_epochs):
         print(f'EPOCH {epoch + 1}/{num_epochs}:')

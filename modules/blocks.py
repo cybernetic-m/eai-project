@@ -37,10 +37,10 @@ class lstm(nn.Module):
 class mlp(nn.Module):
   # layer_dim_list: it is a list of layer dimension 
   # (Ex. [20, 30, 50, 3] create a 4 layer MLP with input_dim = 20, hidden_dim_1 = 30 ... until output_dim = 3)
-  def __init__(self, layer_dim_list):
+  def __init__(self, layer_dim_list, bias=True):
     super(mlp, self).__init__()
     #print(layer_dim_list)
-    self.linear_layers = nn.ModuleList([nn.Linear(layer_dim_list[i], layer_dim_list[i+1]) for i in range(len(layer_dim_list)-1)])
+    self.linear_layers = nn.ModuleList([nn.Linear(layer_dim_list[i], layer_dim_list[i+1], bias=bias) for i in range(len(layer_dim_list)-1)])
     initialize_weights(self)
 
   def forward(self, x):
@@ -151,6 +151,33 @@ class conv_encoder(nn.Module):
        x = pooling(x)
        x = F.dropout(x, p=self.dropout)
     return x
+    
+class conv_decoder(nn.Module):
+# in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the decoder   
+# scale_factor: it is the factor multiplied to the dimension of input at the upsample layer (for example 2 means double the input dimension)
+# padding: you can select the type of padding among "same", "valid", "full"
+# upsample_mode: you can select the type of upsampling among "nearest", "linear"
+
+  def __init__(self, in_kern_out, scale_factor = 2, padding = "same", upsample_mode = "linear"):
+    super().__init__()
+
+    self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=in_channels, 
+                                                out_channels=out_channels,
+                                                kernel_size=kernel_size,
+                                                padding = padding
+                                                ) 
+                                                for in_channels, kernel_size, out_channels in in_kern_out])
+    
+    self.upsample_layers = nn.ModuleList([nn.Upsample(scale_factor=scale_factor, mode=upsample_mode) for _ in in_kern_out])
+    initialize_weights(self)
+
+  def forward(self, x):
+    for conv, upsample in zip(self.conv_layers, self.upsample_layers):
+      x = conv(x)
+      x = F.leaky_relu(x)
+      x = upsample(x)
+
+    return x
   
 class lstm_encoder(nn.Module):
    # in_hidd: you should pass a list of the type [[input_dim, hidden_dim], ...] for each lstm layer
@@ -204,37 +231,6 @@ class lstm_decoder(nn.Module):
     o = o.view(o.shape[0], x.shape[2], x.shape[1]) # Reshaping to return to the input dimensions [batch_size, feature_dim, seq_len] ([256, 4, 200])
 
     return o
-  
-class conv_decoder(nn.Module):
-# in_kern_out: it is a list of lists [[input_channels, kernel_size, output_channels], ...] for each conv layer in the decoder   
-# scale_factor: it is the factor multiplied to the dimension of input at the upsample layer (for example 2 means double the input dimension)
-# padding: you can select the type of padding among "same", "valid", "full"
-# upsample_mode: you can select the type of upsampling among "nearest", "linear"
-
-  def __init__(self, in_kern_out, scale_factor = 2, padding = "same", upsample_mode = "linear"):
-    super().__init__()
-
-    self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=in_channels, 
-                                                out_channels=out_channels,
-                                                kernel_size=kernel_size,
-                                                padding = padding
-                                                ) 
-                                                for in_channels, kernel_size, out_channels in in_kern_out])
-    
-    self.upsample_layers = nn.ModuleList([nn.Upsample(scale_factor=scale_factor, mode=upsample_mode) for _ in in_kern_out])
-    initialize_weights(self)
-
-  def forward(self, x):
-    for i, (conv, upsample) in enumerate(zip(self.conv_layers, self.upsample_layers)):
-      if i != len(self.conv_layers):
-        x = conv(x)
-        x = F.leaky_relu(x)
-        x = upsample(x)
-      else:
-        x = conv(x)
-        #x = F.sigmoid(x)
-        x = upsample(x)
-    return x
 
    
 def initialize_weights(model):

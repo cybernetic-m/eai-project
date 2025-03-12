@@ -113,11 +113,14 @@ def transform_dataframe(df):
     for i, row in df.iterrows():
         # If X1 is not NaN, we know this is a valid row for X1
         if pd.notna(row['X1']):
+            time_value = df['time'][i]
             x1_value = row['X1']
-            filled_rows.append({'time': row['time'], 'X1': x1_value, 'Y1': df.iloc[i+1]['Y1'], 'Z1': df.iloc[i+2]['Z1']})
+            filled_rows.append({'time': time_value, 'X1': x1_value, 'Y1': df.iloc[i+1]['Y1'], 'Z1': df.iloc[i+2]['Z1']})
 
     # Convert the list of filled rows to a DataFrame
     filled_df = pd.DataFrame(filled_rows)
+    
+    
 
     # Now group the data by time and use the last available X1, Y1, and Z1 for each time
     final_df = filled_df.groupby('time').last().reset_index()

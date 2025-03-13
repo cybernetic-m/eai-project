@@ -78,6 +78,8 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+results mandelli
+
 # IPython
 profile_default/
 ipython_config.py

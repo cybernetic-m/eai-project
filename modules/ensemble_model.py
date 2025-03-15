@@ -85,9 +85,9 @@ class ensemble_model(nn.Module):
                 
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
-                print(self.y_pred[n].shape)
-                print(y_true.detach().cpu().shape)
-                loss_n = root_mean_squared_error(self.y_pred[n].detach().cpu().squeeze(1), y_true.detach().cpu()) # Dimension [8, 1, 3]
+                #print(self.y_pred[n].shape)
+                #print(y_true.detach().cpu().shape)
+                loss_n = root_mean_squared_error(self.y_pred[n].detach().cpu().squeeze(1), y_true.detach().cpu().squeeze(1)) # Dimension [8, 1, 3]
                 #print(n, ": ", loss_n)
                 #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)

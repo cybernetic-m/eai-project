@@ -87,7 +87,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
             loss_epoch += loss.detach().item()
 
         # Add predictions and true values to the lists
-        y_true_list += y_true[:,1,:].cpu().tolist()
+        y_true_list += y_true.squeeze(1).cpu().tolist()
         y_pred_list += y_pred.squeeze(1).cpu().tolist()
         if autoencoder:
             x_true_list += X.cpu().tolist()

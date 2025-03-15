@@ -85,7 +85,7 @@ class ensemble_model(nn.Module):
                 
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
-                print(self.y_pred.shape)
+                print(self.y_pred[n].shape)
                 print(y_true.detach().cpu().shape)
                 loss_n = root_mean_squared_error(self.y_pred[n].detach().cpu().squeeze(1), y_true.detach().cpu()) # Dimension [8, 1, 3]
                 #print(n, ": ", loss_n)

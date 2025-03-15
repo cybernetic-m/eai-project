@@ -78,14 +78,14 @@ class ensemble_model(nn.Module):
             #print("AW y:", y[0].detach().cpu().numpy())
         return y
     
-    def update_weights(self, y_pred, y_true):
+    def update_weights(self, y_true):
         model_losses = []
         with torch.no_grad():
             for n in range(self.n_models):
                 
                 #print(y_pred[n].shape)
                 #print(y_true.shape)
-                loss_n = root_mean_squared_error(y_pred[n].detach().cpu().squeeze(1), y_true[:,1,:].detach().cpu()) # Dimension [8, 1, 3]
+                loss_n = root_mean_squared_error(self.y_pred[n].detach().cpu().squeeze(1), y_true[:,1,:].detach().cpu()) # Dimension [8, 1, 3]
                 #print(n, ": ", loss_n)
                 #print(loss_n.shape)
                 # Do the average among 8 samples in the batch (dim=0)
@@ -103,27 +103,27 @@ class ensemble_model(nn.Module):
             # such that their sum to one (dim=0 because the tensor shape is simply [3])
             self.weights = F.softmax(self.weights/max(self.weights), dim=0) 
 
-    def forward(self, x, y_true_norm, y_true):
-        y_pred = []
+    def forward(self, x, y_prec_norm, y_prec):
+        self.y_pred = []
         if self.heterogeneous:
             #print(y_true_norm.shape)
             #print(x.shape)
             if x.shape[1] != 1:
                 x = x.reshape(x.shape[0], 1, -1)
-            x = torch.concat((x, y_true_norm), dim=2)
+            x = torch.concat((x, y_prec_norm), dim=2)
             
         if self.models:
-            y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
+            self.y_pred += [model(x) for model in self.models] # Create a list of tensor of predictions [[8,1,3], [8,1,3], ...]
         #print(y_true[:,0,:].shape)
         if self.arima_models:
-            y_pred += [arima(y_true[:,0,:].unsqueeze(1)) for arima in self.arima_models] # [8,1,3]
+            self.y_pred += [arima(y_prec) for arima in self.arima_models] # [8,1,3]
         if self.rnn_models:
             #print(x.shape)
-            y_pred += [model(x) for model in self.rnn_models]
-        if self.mode == 'auto-weighted':
-            self.update_weights(y_pred, y_true) # Update the weights for the autoweighted voting
-        y = self.voting(y_pred) # Apply the voting among the predictions y = [8,1,3]
-        return y, y_pred
+            self.y_pred += [model(x) for model in self.rnn_models]
+        #if self.mode == 'auto-weighted':
+        #    self.update_weights(y_true) # Update the weights for the autoweighted voting
+        y = self.voting(self.y_pred) # Apply the voting among the predictions y = [8,1,3]
+        return y, self.y_pred
     
 '''
 if __name__ == '__main__' :

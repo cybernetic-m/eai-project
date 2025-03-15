@@ -18,10 +18,14 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
     else:
         model.eval() # Set the model in Evaluation mode
     
-    for X, y_true in dataloader:
+    for X, y in dataloader:
         
         # Set the device
         device = X.device
+        
+        y_prec = y[:,0,:].unsqueeze(1)
+        
+        y_true = y[:,1,:].unsqueeze(1)
 
         if train:
             # Put the gradient to zero
@@ -33,23 +37,25 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
         
         # Make predictions
         if complete:
-            y_true_model = y_true.detach()
+            y_prec = y_prec.detach()
             if autoencoder:
-                (y_pred, y_pred_models), x_pred = model(X, y_true_model) # In this case the model return also the x_pred for the autoencoder update! 
+                (y_pred, y_pred_models), x_pred = model(X, y_prec) # In this case the model return also the x_pred for the autoencoder update!
+                model.update_weights(y_true) 
             else:
-                y_pred, y_pred_models = model(X, y_true_model)
+                y_pred, y_pred_models = model(X, y_prec)
+                model.update_weights(y_true)
         else:
             y_pred = model(X)
         #print(y_pred)
 
         # Compute the loss
         if complete:
-            loss = [loss_fn(y_pred_, y_true[:,1,:].unsqueeze(1)) for y_pred_ in y_pred_models if y_pred.shape == y_true[:,1,:].unsqueeze(1).shape]
+            loss = [loss_fn(y_pred_, y_true) for y_pred_ in y_pred_models if y_pred.shape == y_true.shape]
             if autoencoder:
                 X = X.permute(0,2,1)
                 loss.append(loss_fn(x_pred, X)) # Loss computation of Autoencoder compare X and x_pred because the autoencoder reconstruct the input!
         else:
-            loss = loss_fn(y_pred, y_true[:,1,:].unsqueeze(1))
+            loss = loss_fn(y_pred, y_true)
 
         if train:
             # Compute the gradient
@@ -73,7 +79,7 @@ def train_one_epoch(model, optimizer, loss_fn, dataloader, complete, autoencoder
             if autoencoder:
                 #print("Loss Models:", torch.stack(loss[:-1]).detach().cpu().numpy())
                 #loss_epoch += torch.mean(torch.stack(loss[:-1])).detach().item()
-                loss_epoch += loss_fn(y_pred, y_true[:,1,:].unsqueeze(1)).detach().item() # Loss of the prediction of the ensemble model entire
+                loss_epoch += loss_fn(y_pred, y_true).detach().item() # Loss of the prediction of the ensemble model entire
                 loss_epoch_autoencoder += loss[-1].detach().item()
             else:
                 loss_epoch += torch.mean(torch.stack(loss)).detach().item()

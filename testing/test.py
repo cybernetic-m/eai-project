@@ -36,10 +36,16 @@ def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, dev
 
             # Take input and label from the list [input, label]
             #print("Data: ", data)
-            x, y_true = data       # tuple of tensor -> data = ([8,5,4], [8,3]) where 8 is batch size
+            x, y = data       # tuple of tensor -> data = ([8,5,4], [8,3]) where 8 is batch size
+            
+            y_prec = y[:,0,:].unsqueeze(1)
+            
+            y_true = y[:,1,:].unsqueeze(1)
+            
+            
             #print("x: ", x.shape)
             #print("y_true: ", y_true.shape)
-               
+                
             # Counting the time for inference
             # Start counter
             start_time = time.time()
@@ -50,9 +56,11 @@ def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, dev
             if complete:
                 y_true = y_true.detach() 
                 if autoencoder:
-                    (y_pred, y_pred_models), x_pred = model(x, y_true)
+                    (y_pred, y_pred_models), x_pred = model(x, y_prec)
+                    model.update_weights(y_true)
                 else:
-                    y_pred, y_pred_models = model(x, y_true)  
+                    y_pred, y_pred_models = model(x, y_prec)
+                    model.update_weights(y_true)
                 #print("y_pred:", y_pred.shape)
             else:
                 y_pred = model(x)
@@ -89,7 +97,7 @@ def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, dev
     # Average of the training time
     total_inference_time = sum(inference_time_list)
     inference_time_avg = total_inference_time / len(inference_time_list) 
-    
+
     # Definition of the test metrics dictionary for the model
     test_model_metrics = {
     'rmse':[],
@@ -113,7 +121,7 @@ def test(model, model_path, test_dataloader, loss_fn, complete, autoencoder, dev
     'r2_ref':[],
     'loss_avg': loss_autoencoder_avg,
     }
-    
+
     # Calculate the metrics
     test_model_metrics = calculate_metrics(y_true_list, y_pred_list, test_model_metrics, train=False)
     if autoencoder:

@@ -97,7 +97,7 @@ class complete_model(nn.Module):
     else:
       return [], [], []
 
-  def forward(self, x, y_true):
+  def forward(self, x, y_pred):
     
     # Input Transform
     x = x.permute(0,2,1)
@@ -109,10 +109,10 @@ class complete_model(nn.Module):
       x = (x - self.mean_X) / (self.std_X + 1e-10) # Standard Scaling (1e-6 prevent division by zero)
       #print(self.mean_Y.shape)
       #print(y_true[:,0,:].unsqueeze(1).shape)
-      y_true_norm = (y_true[:,0,:].unsqueeze(1) - self.mean_Y) / (self.std_Y + 1e-10)
+      y_true_norm = (y_pred - self.mean_Y) / (self.std_Y + 1e-10)
     if self.norm == 'Minmax':
       x = (x-self.min_val_X) / (self.max_val_X - self.min_val_X + 1e-6) # MinMax scaling (1e-6 prevent division by zero)
-      y_true_norm = (y_true[:,0,:].unsqueeze(1)-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
+      y_true_norm = (y_pred-self.min_val_Y) / (self.max_val_Y - self.min_val_Y + 1e-6)
 
     # Extracting Features and sending to the model for output "out"
     if self.extractor_type == 'lstm_encoder':
@@ -127,7 +127,7 @@ class complete_model(nn.Module):
       if self.norm == 'Minmax':
         o = o * (self.max_val_X - self.min_val_X) + self.min_val_X # MinMax scaling (1e-6 prevent division by zero)
 
-    out = self.ensemble(merged_z, y_true_norm, y_true)
+    out = self.ensemble(merged_z, y_true_norm, y_pred)
   
     # We return both o (output of the autoencoder to train it) and out (output of the forecaster to train it)
     if self.extractor_type == 'lstm_encoder':
@@ -159,6 +159,9 @@ class complete_model(nn.Module):
     else:  
       self.load_state_dict(state_dict)
     print("loaded:", path)
+
+  def update_weights(self, y_true):
+    self.ensemble.update_weights(y_true)
 
 '''
 if __name__ == '__main__' :
